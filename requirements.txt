@@ -1,3 +1,7 @@
 black==21.5b2
 mypy==0.812
 pytest==6.2.4
+docopt==0.6.2
+tqdm==4.61.0
+
+dpu-utils

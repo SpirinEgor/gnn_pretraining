@@ -23,7 +23,7 @@ jobs:
         black . --check -l 120
     - name: Check types with mypy
       run: |
-        mypy . --ignore-missing-imports
+        mypy .
     - name: Run unit tests with pytest
       run: |
         pytest test
