@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from data.preprocess.typilus.typeparsing.nodes import TypeAnnotationNode
+from src.data.preprocess.typilus.typeparsing.nodes import TypeAnnotationNode
 
 
 class RewriteRule(ABC):

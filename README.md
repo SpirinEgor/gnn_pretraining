@@ -8,7 +8,7 @@ pip install -r requirements.txt
 
 ## Data preparation
 
-[data.preprocess](data/preprocess) module provide all necessary functionality to prepare data for further training.
+[src.data.preprocess](src/data/preprocess) module provide all necessary functionality to prepare data for further training.
 
 Source code should be provided in single file with the following format:
 - Examples are separated between each other by special symbol: `␢`
@@ -23,7 +23,7 @@ To represents code as graphs we use the approach presented in [Typilus](https://
 The implementation is taken from the [fork](https://github.com/JetBrains-Research/typilus)
 of original implementation with essential bug fixes.
 
-Use [preprocess.py](data/preprocess/preprocess.py) to convert your data into graphs:
+Use [preprocess.py](src/data/preprocess/preprocess.py) to convert your data into graphs:
 ```shell
 PYTHONPATH="." python data/preprocess/preprocess.py -d <path to file with data>
 ```

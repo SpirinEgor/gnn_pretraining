@@ -6,8 +6,8 @@ from typing import List, Dict, Iterable, Tuple
 from dpu_utils.utils import ChunkWriter
 from tqdm import tqdm
 
-from data.preprocess.typilus.graphgenerator import AstGraphGenerator
-from data.preprocess.typilus.type_lattice_generator import TypeLatticeGenerator
+from src.data.preprocess.typilus.graphgenerator import AstGraphGenerator
+from src.data.preprocess.typilus.type_lattice_generator import TypeLatticeGenerator
 
 
 def get_files(root: str):

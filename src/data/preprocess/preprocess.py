@@ -1,15 +1,15 @@
 import json
 import logging
 from argparse import ArgumentParser
-from multiprocessing import Pool, cpu_count, Lock, Semaphore, Queue
+from multiprocessing import Pool, cpu_count
 from os import getcwd
 from os.path import join, dirname, basename
 from typing import Dict, Optional
 
 from tqdm.auto import tqdm
 
-from data.preprocess.typilus.graphgenerator import AstGraphGenerator
-from data.preprocess.typilus.type_lattice_generator import TypeLatticeGenerator
+from src.data.preprocess.typilus.graphgenerator import AstGraphGenerator
+from src.data.preprocess.typilus.type_lattice_generator import TypeLatticeGenerator
 
 DELIMITER_EXAMPLE = "␢"
 DELIMITER_FILENAME = "₣"
