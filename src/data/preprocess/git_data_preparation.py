@@ -4,7 +4,7 @@ import json
 import os
 import random
 import re
-from typing import Tuple, Iterator, List
+from typing import Tuple, Iterator, List, Dict, Optional
 
 from tqdm.auto import tqdm
 
@@ -19,19 +19,16 @@ _BAD_TEXT_REGEX = re.compile(r"auto[- ]?generated file", flags=re.IGNORECASE)
 
 
 class GitProjectExtractor:
-    def __init__(self, raw_data_path: str, random_seed: int, val_part: float, test_part: float):
-        self._path = raw_data_path
-        self._rng = random.Random(random_seed)
+    def __init__(self, raw_data_path: str, random_seed: int, val_part: Optional[float], test_part: Optional[float]):
+        self._path: str = raw_data_path
+        self._rng: random.Random = random.Random(random_seed)
 
-        self._val_part = val_part if val_part is not None else 0.0
-        self._test_part = test_part if test_part is not None else 0.0
+        self._val_part: float = val_part if val_part is not None else 0.0
+        self._test_part: float = test_part if test_part is not None else 0.0
         assert self._val_part + self._test_part <= 1.0
-        self._train_part = 1.0 - self._val_part - self._test_part
+        self._train_part: float = 1.0 - self._val_part - self._test_part
 
-        self._found_projects_amount = 0
-        self._processed_projects = None
-
-        self._skipped_files = []
+        self._processed_projects: Optional[Dict[str, List[List[Tuple[str, str, str, str]]]]] = None
 
     # Main method
     def get_examples(self, holdout: str, languages: Tuple[str] = ("Python",)) -> Iterator[Example]:
@@ -51,7 +48,7 @@ class GitProjectExtractor:
     def _extract_projects(self, languages: Tuple[str]):
         lang_files = self._get_lang_files(languages)
         projects = self._get_files_projects(lang_files)
-        self._found_projects_amount = len(projects)
+        found_projects_amount = len(projects)
         processed_projects, skipped_projects, found_files_amount = self._process_projects(projects)
 
         self._processed_projects = dict()
@@ -65,7 +62,7 @@ class GitProjectExtractor:
         self._processed_projects["test"] = processed_projects[train_projects_amount + val_projects_amount :]
 
         tqdm.write(
-            f"Found {self._found_projects_amount} projects with {found_files_amount} files, "
+            f"Found {found_projects_amount} projects with {found_files_amount} files, "
             f"skipped {len(skipped_projects)} projects\n"
         )
         if len(skipped_projects) != 0:
@@ -78,6 +75,7 @@ class GitProjectExtractor:
             with open(path, "rt", encoding="utf-8", errors="ignore") as f:
                 return f.read()
 
+        assert self._processed_projects is not None
         for project in tqdm(self._processed_projects[holdout], desc=f"Reading {holdout} projects..."):
             examples = (
                 Example(language, proj_name, filename, read_file(path))
@@ -113,7 +111,7 @@ class GitProjectExtractor:
 
     # --------------------------------- Paths processing methods -------------------------------- #
     def _get_lang_files(self, languages: Tuple[str]) -> List[Tuple[str, str]]:
-        res = []
+        res: List[Tuple[str, str]] = []
         for language in languages:
             lang_files = glob.glob(
                 os.path.join(self._path, "languages", language, ".*", "*", "*", "**", "*.*"), recursive=True
@@ -132,8 +130,7 @@ class GitProjectExtractor:
                 project_name = os.sep.join(file.split(os.sep)[-3:-1])
                 projects[project_name].append((file, lang))
 
-        projects = list(projects.items())
-        return projects
+        return list(projects.items())
 
     def _process_projects(
         self, projects: List[Tuple[str, List[Tuple[str, str]]]]
@@ -173,8 +170,6 @@ class GitProjectExtractor:
                 for (file, lang) in files:
                     if os.path.basename(file) in paths_dict:
                         names_and_paths.append((lang, project_name, paths_dict[os.path.basename(file)], file))
-                    else:
-                        self._skipped_files.append((file, os.stat(file).st_size))
 
                 processed_projects.append(names_and_paths)
                 files_amount += len(names_and_paths)

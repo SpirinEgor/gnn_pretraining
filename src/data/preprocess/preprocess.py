@@ -62,7 +62,7 @@ def process_holdout(
 ) -> None:
     with Pool(USE_CPU) as pool:
         project_graphs = pool.map(extract_graphs, data_extractor.get_examples(holdout))
-    graphs = [g for graphs in project_graphs for g in graphs if g is not None]
+    graphs = [graph for graph in project_graphs if graph is not None]
     if rng:
         rng.shuffle(graphs)
 
