@@ -1,6 +1,6 @@
 from itertools import product
 
-from data.preprocess.typilus.typeparsing.nodes import (
+from src.data.preprocess.typilus.typeparsing.nodes import (
     SubscriptAnnotationNode,
     TupleAnnotationNode,
     ListAnnotationNode,
@@ -8,7 +8,7 @@ from data.preprocess.typilus.typeparsing.nodes import (
     IndexAnnotationNode,
     ElipsisAnnotationNode,
 )
-from data.preprocess.typilus.typeparsing.visitor import TypeAnnotationVisitor
+from src.data.preprocess.typilus.typeparsing.visitor import TypeAnnotationVisitor
 
 __all__ = ["EraseOnceTypeRemoval"]
 

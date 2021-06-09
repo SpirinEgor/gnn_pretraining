@@ -1,11 +1,10 @@
-import traceback
 from abc import ABC, abstractmethod
 from typing import Any, Optional, Iterator
 
 import typed_ast
 from typed_ast.ast3 import parse
 
-from data.preprocess.typilus.typeparsing.visitor import TypeAnnotationVisitor
+from src.data.preprocess.typilus.typeparsing.visitor import TypeAnnotationVisitor
 
 __all__ = [
     "FaultyAnnotation",

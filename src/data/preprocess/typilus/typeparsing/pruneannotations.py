@@ -1,4 +1,4 @@
-from data.preprocess.typilus.typeparsing.nodes import (
+from src.data.preprocess.typilus.typeparsing.nodes import (
     TypeAnnotationNode,
     SubscriptAnnotationNode,
     TupleAnnotationNode,
@@ -7,7 +7,7 @@ from data.preprocess.typilus.typeparsing.nodes import (
     AttributeAnnotationNode,
     IndexAnnotationNode,
 )
-from data.preprocess.typilus.typeparsing.visitor import TypeAnnotationVisitor
+from src.data.preprocess.typilus.typeparsing.visitor import TypeAnnotationVisitor
 
 __all__ = ["PruneAnnotationVisitor"]
 

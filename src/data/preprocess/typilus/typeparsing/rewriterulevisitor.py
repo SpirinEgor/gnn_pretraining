@@ -1,6 +1,6 @@
 from typing import List
 
-from data.preprocess.typilus.typeparsing.nodes import (
+from src.data.preprocess.typilus.typeparsing.nodes import (
     TypeAnnotationNode,
     SubscriptAnnotationNode,
     TupleAnnotationNode,
@@ -9,8 +9,8 @@ from data.preprocess.typilus.typeparsing.nodes import (
     IndexAnnotationNode,
     ElipsisAnnotationNode,
 )
-from data.preprocess.typilus.typeparsing.rewriterules import RewriteRule
-from data.preprocess.typilus.typeparsing.visitor import TypeAnnotationVisitor
+from src.data.preprocess.typilus.typeparsing.rewriterules import RewriteRule
+from src.data.preprocess.typilus.typeparsing.visitor import TypeAnnotationVisitor
 
 
 class RewriteRuleVisitor(TypeAnnotationVisitor):

@@ -1,6 +1,6 @@
 from typing import Optional
 
-from data.preprocess.typilus.typeparsing.nodes import (
+from src.data.preprocess.typilus.typeparsing.nodes import (
     parse_type_annotation_node,
     TypeAnnotationNode,
     SubscriptAnnotationNode,
@@ -8,7 +8,7 @@ from data.preprocess.typilus.typeparsing.nodes import (
     ElipsisAnnotationNode,
     TupleAnnotationNode,
 )
-from data.preprocess.typilus.typeparsing.rewriterules import RewriteRule
+from src.data.preprocess.typilus.typeparsing.rewriterules import RewriteRule
 
 __all__ = ["RemoveGenericWithAnys"]
 

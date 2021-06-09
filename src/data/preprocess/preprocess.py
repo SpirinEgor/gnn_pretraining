@@ -1,17 +1,16 @@
-import itertools
 import os
 import json
 import logging
 import random
 from argparse import ArgumentParser
 from multiprocessing import Pool, cpu_count
-from typing import Dict, Optional, List, Iterable
+from typing import Dict, Optional
 
 from tqdm.auto import tqdm
 
-from data.preprocess.git_data_preparation import GitProjectExtractor, Example
-from data.preprocess.typilus.graphgenerator import AstGraphGenerator
-from data.preprocess.typilus.type_lattice_generator import TypeLatticeGenerator
+from src.data.preprocess.git_data_preparation import GitProjectExtractor, Example
+from src.data.preprocess.typilus.graphgenerator import AstGraphGenerator
+from src.data.preprocess.typilus.type_lattice_generator import TypeLatticeGenerator
 
 TYPE_LATTICE_CONFIG = os.path.join(os.getcwd(), os.path.dirname(__file__), "typilus/type_lattice_config.json")
 
@@ -63,7 +62,6 @@ def process_holdout(
 ) -> None:
     with Pool(USE_CPU) as pool:
         project_graphs = pool.map(extract_graphs, data_extractor.get_examples(holdout))
-    # project_graphs = map(extract_graphs, data_extractor.get_examples(holdout))
     graphs = [g for graphs in project_graphs for g in graphs if g is not None]
     if rng:
         rng.shuffle(graphs)
