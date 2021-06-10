@@ -13,7 +13,7 @@ PRINT_MOST_COMMON = 10
 
 def configure_arg_parser() -> ArgumentParser:
     arg_parser = ArgumentParser()
-    arg_parser.add_argument("-d", "--data", required=True, help="Path to data corpus")
+    arg_parser.add_argument("-d", "--data", required=True, help="Path to data corpus in JSONL format")
     return arg_parser
 
 

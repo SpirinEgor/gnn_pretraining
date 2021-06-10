@@ -1,3 +1,4 @@
+import gzip
 import os
 import json
 import logging
@@ -67,21 +68,22 @@ def process_holdout(
         rng.shuffle(graphs)
 
     os.makedirs(dest_path, exist_ok=True)
-    output_file = os.path.join(dest_path, f"graphs_{holdout}.jsonl")
+    output_file = os.path.join(dest_path, f"graphs_{holdout}.jsonl.gz")
     print(f"Saving graph in JSONL format to {output_file}")
-    with open(output_file, "w") as out:
-        out.writelines(json.dumps(graph) for graph in tqdm(graphs))
+    with gzip.open(output_file, "wb") as out:
+        for graph in tqdm(graphs):
+            out.write((json.dumps(graph) + "\n").encode("utf-8"))
 
 
 def preprocess(data_path: str, dest_path: str, random_seed: int, val_part: Optional[float], test_part: Optional[float]):
     data_extractor = GitProjectExtractor(data_path, random_seed, val_part, test_part)
     rng = random.Random(random_seed)
 
-    process_holdout(data_extractor, rng, "train", dest_path)
     if val_part:
         process_holdout(data_extractor, rng, "val", dest_path)
     if test_part:
         process_holdout(data_extractor, rng, "test", dest_path)
+    process_holdout(data_extractor, rng, "train", dest_path)
 
 
 if __name__ == "__main__":
