@@ -1,3 +1,4 @@
+# type: ignore
 from abc import ABC
 from typing import Any
 

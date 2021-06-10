@@ -9,9 +9,14 @@ from typing import Dict, Optional
 
 from tqdm.auto import tqdm
 
-from src.data.preprocess.git_data_preparation import GitProjectExtractor, Example
+from src.data.preprocess.git_data_preparation import (
+    GitProjectExtractor,
+    Example,
+)
 from src.data.preprocess.typilus.graphgenerator import AstGraphGenerator
-from src.data.preprocess.typilus.type_lattice_generator import TypeLatticeGenerator
+from src.data.preprocess.typilus.type_lattice_generator import (
+    TypeLatticeGenerator,
+)
 
 TYPE_LATTICE_CONFIG = os.path.join(os.getcwd(), os.path.dirname(__file__), "typilus/type_lattice_config.json")
 
@@ -24,20 +29,44 @@ logger = logging.getLogger(__name__)
 
 def configure_arg_parser() -> ArgumentParser:
     arg_parser = ArgumentParser()
-    arg_parser.add_argument("-f", "--data", type=str, required=True, help='Path to the "dataset/v3" directory')
     arg_parser.add_argument(
-        "-t", "--dest", type=str, required=True, help="Path to directory where graphs will be stored"
+        "-f",
+        "--data",
+        type=str,
+        required=True,
+        help='Path to the "dataset/v3" directory',
     )
     arg_parser.add_argument(
-        "--train_part", type=float, default=0.7, help="Part of the dataset which will be used for training"
+        "-t",
+        "--dest",
+        type=str,
+        required=True,
+        help="Path to directory where graphs will be stored",
     )
     arg_parser.add_argument(
-        "--val_part", type=float, default=0.2, help="Part of the dataset which will be used for validation"
+        "--train_part",
+        type=float,
+        default=0.7,
+        help="Part of the dataset which will be used for training",
     )
     arg_parser.add_argument(
-        "--test_part", type=float, default=0.2, help="Part of the dataset which will be used for testing"
+        "--val_part",
+        type=float,
+        default=0.2,
+        help="Part of the dataset which will be used for validation",
     )
-    arg_parser.add_argument("--seed", type=int, default=17, help="Random seed for projects and examples shuffle")
+    arg_parser.add_argument(
+        "--test_part",
+        type=float,
+        default=0.2,
+        help="Part of the dataset which will be used for testing",
+    )
+    arg_parser.add_argument(
+        "--seed",
+        type=int,
+        default=17,
+        help="Random seed for projects and examples shuffle",
+    )
 
     return arg_parser
 
@@ -59,7 +88,10 @@ def extract_graphs(example: Example) -> Optional[Dict]:
 
 
 def process_holdout(
-    data_extractor: GitProjectExtractor, rng: Optional[random.Random], holdout: str, dest_path: str
+    data_extractor: GitProjectExtractor,
+    rng: Optional[random.Random],
+    holdout: str,
+    dest_path: str,
 ) -> None:
     with Pool(USE_CPU) as pool:
         project_graphs = pool.map(extract_graphs, data_extractor.get_examples(holdout))
@@ -75,7 +107,13 @@ def process_holdout(
             out.write((json.dumps(graph) + "\n").encode("utf-8"))
 
 
-def preprocess(data_path: str, dest_path: str, random_seed: int, val_part: Optional[float], test_part: Optional[float]):
+def preprocess(
+    data_path: str,
+    dest_path: str,
+    random_seed: int,
+    val_part: Optional[float],
+    test_part: Optional[float],
+):
     data_extractor = GitProjectExtractor(data_path, random_seed, val_part, test_part)
     rng = random.Random(random_seed)
 
@@ -90,4 +128,10 @@ if __name__ == "__main__":
     parser = configure_arg_parser()
     args = parser.parse_args()
 
-    preprocess(args.data, args.dest, random_seed=args.seed, val_part=args.val_part, test_part=args.test_part)
+    preprocess(
+        args.data,
+        args.dest,
+        random_seed=args.seed,
+        val_part=args.val_part,
+        test_part=args.test_part,
+    )

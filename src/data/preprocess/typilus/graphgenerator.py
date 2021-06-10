@@ -1,3 +1,4 @@
+# type: ignore
 import keyword
 import logging
 import re
@@ -75,10 +76,21 @@ from typed_ast.ast3 import (
     Call,
 )
 
-from .dataflowpass import DataflowPass
-from .graphgenutils import EdgeType, TokenNode, StrSymbol, SymbolInformation
-from .type_lattice_generator import TypeLatticeGenerator
-from .typeparsing import parse_type_annotation_node, parse_type_comment, TypeAnnotationNode
+from src.data.preprocess.typilus.dataflowpass import DataflowPass
+from src.data.preprocess.typilus.graphgenutils import (
+    EdgeType,
+    SymbolInformation,
+    TokenNode,
+    StrSymbol,
+)
+from src.data.preprocess.typilus.type_lattice_generator import (
+    TypeLatticeGenerator,
+)
+from src.data.preprocess.typilus.typeparsing.nodes import (
+    TypeAnnotationNode,
+    parse_type_comment,
+    parse_type_annotation_node,
+)
 
 
 class AstGraphGenerator(NodeVisitor):
@@ -245,7 +257,12 @@ class AstGraphGenerator(NodeVisitor):
     def _get_node(self, node_id: int):
         return self.__id_to_node[node_id]
 
-    def _add_edge(self, from_node: Union[AST, TokenNode], to_node: Union[AST, TokenNode], edge_type: EdgeType) -> None:
+    def _add_edge(
+        self,
+        from_node: Union[AST, TokenNode],
+        to_node: Union[AST, TokenNode],
+        edge_type: EdgeType,
+    ) -> None:
         from_node_idx = self.__node_id(from_node)
         to_node_idx = self.__node_id(to_node)
         self.__edges[edge_type][from_node_idx].add(to_node_idx)
@@ -444,7 +461,10 @@ class AstGraphGenerator(NodeVisitor):
         else:
             # If there are multiple matching symtables (e.g., [lambda x: x, lambda: lambda x: x]), select the one that
             # was used less times, since the order is right.
-            selected_table = min(closest_matching, key=lambda table: self.__symtable_usage_count[table.get_id()])
+            selected_table = min(
+                closest_matching,
+                key=lambda table: self.__symtable_usage_count[table.get_id()],
+            )
             self.__scope_symtable.append(selected_table)
             self.__symtable_usage_count[selected_table.get_id()] += 1
 
@@ -475,7 +495,13 @@ class AstGraphGenerator(NodeVisitor):
             t = parse_type_comment(t)
 
         symbol_name = node.name
-        self.__visit_variable_like(symbol_name, node.lineno, node.col_offset, can_annotate_here=True, type_annotation=t)
+        self.__visit_variable_like(
+            symbol_name,
+            node.lineno,
+            node.col_offset,
+            can_annotate_here=True,
+            type_annotation=t,
+        )
 
         old_return_scope = self.__return_scope
         self.__enter_child_symbol_table("function", node.name, node.lineno)
@@ -586,7 +612,12 @@ class AstGraphGenerator(NodeVisitor):
         if node.type:
             self.visit(node.type)
             if node.name:
-                self.__visit_variable_like(node.name, node.lineno, node.col_offset, can_annotate_here=False)
+                self.__visit_variable_like(
+                    node.name,
+                    node.lineno,
+                    node.col_offset,
+                    can_annotate_here=False,
+                )
         self.__visit_statement_block(node.body)
 
     def visit_While(self, node: While):
@@ -671,7 +702,8 @@ class AstGraphGenerator(NodeVisitor):
             and len(node.value.args) == 2
         ):
             self.__type_graph.add_type_alias(
-                parse_type_annotation_node(node.value.args[0]), parse_type_annotation_node(node.value.args[1])
+                parse_type_annotation_node(node.value.args[0]),
+                parse_type_annotation_node(node.value.args[1]),
             )
 
         # TODO: Type aliases are of the form Vector=List[float] how do we parse these?
@@ -708,7 +740,12 @@ class AstGraphGenerator(NodeVisitor):
 
     def visit_AugAssign(self, node: AugAssign):
         if isinstance(node.target, Name) or isinstance(node.target, Attribute):
-            self.__visit_variable_like(node.target, node.lineno, node.col_offset, can_annotate_here=False)
+            self.__visit_variable_like(
+                node.target,
+                node.lineno,
+                node.col_offset,
+                can_annotate_here=False,
+            )
         else:
             self.visit(node.target)
         self._add_edge(node.target, node.value, EdgeType.COMPUTED_FROM)
@@ -797,7 +834,11 @@ class AstGraphGenerator(NodeVisitor):
             type_annotation = parse_type_comment(node.type_comment)
 
         self.__visit_variable_like(
-            node.arg, node.lineno, node.col_offset, can_annotate_here=True, type_annotation=type_annotation
+            node.arg,
+            node.lineno,
+            node.col_offset,
+            can_annotate_here=True,
+            type_annotation=type_annotation,
         )
 
     def visit_arguments(self, node: arguments):
@@ -1110,7 +1151,10 @@ class AstGraphGenerator(NodeVisitor):
             raise Exception("Unrecognized node type %s" % type(node))
 
     def to_dot(
-        self, filename: str, initial_comment: str = "", draw_only_edge_types: Optional[Set[EdgeType]] = None
+        self,
+        filename: str,
+        initial_comment: str = "",
+        draw_only_edge_types: Optional[Set[EdgeType]] = None,
     ) -> None:
         nodes_to_be_drawn = set()
 

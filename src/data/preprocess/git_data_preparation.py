@@ -19,7 +19,13 @@ _BAD_TEXT_REGEX = re.compile(r"auto[- ]?generated file", flags=re.IGNORECASE)
 
 
 class GitProjectExtractor:
-    def __init__(self, raw_data_path: str, random_seed: int, val_part: Optional[float], test_part: Optional[float]):
+    def __init__(
+        self,
+        raw_data_path: str,
+        random_seed: int,
+        val_part: Optional[float],
+        test_part: Optional[float],
+    ):
         self._path: str = raw_data_path
         self._rng: random.Random = random.Random(random_seed)
 
@@ -49,7 +55,11 @@ class GitProjectExtractor:
         lang_files = self._get_lang_files(languages)
         projects = self._get_files_projects(lang_files)
         found_projects_amount = len(projects)
-        processed_projects, skipped_projects, found_files_amount = self._process_projects(projects)
+        (
+            processed_projects,
+            skipped_projects,
+            found_files_amount,
+        ) = self._process_projects(projects)
 
         self._processed_projects = dict()
         self._rng.shuffle(processed_projects)
@@ -76,7 +86,10 @@ class GitProjectExtractor:
                 return f.read()
 
         assert self._processed_projects is not None
-        for project in tqdm(self._processed_projects[holdout], desc=f"Reading {holdout} projects..."):
+        for project in tqdm(
+            self._processed_projects[holdout],
+            desc=f"Reading {holdout} projects...",
+        ):
             examples = (
                 Example(language, proj_name, filename, read_file(path))
                 for language, proj_name, filename, path in project
@@ -114,7 +127,17 @@ class GitProjectExtractor:
         res: List[Tuple[str, str]] = []
         for language in languages:
             lang_files = glob.glob(
-                os.path.join(self._path, "languages", language, ".*", "*", "*", "**", "*.*"), recursive=True
+                os.path.join(
+                    self._path,
+                    "languages",
+                    language,
+                    ".*",
+                    "*",
+                    "*",
+                    "**",
+                    "*.*",
+                ),
+                recursive=True,
             )
             assert lang_files, f"There are no files in {self._path} with language {language}"
             print(f"Found {len(lang_files)} files' metainfos for {language} lang")
@@ -169,7 +192,14 @@ class GitProjectExtractor:
                 names_and_paths = []
                 for (file, lang) in files:
                     if os.path.basename(file) in paths_dict:
-                        names_and_paths.append((lang, project_name, paths_dict[os.path.basename(file)], file))
+                        names_and_paths.append(
+                            (
+                                lang,
+                                project_name,
+                                paths_dict[os.path.basename(file)],
+                                file,
+                            )
+                        )
 
                 processed_projects.append(names_and_paths)
                 files_amount += len(names_and_paths)

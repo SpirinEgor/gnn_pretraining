@@ -1,26 +1,54 @@
+# type: ignore
 from typing import Any, List, Dict, FrozenSet, Set, Tuple, Optional
 from collections import defaultdict, ChainMap
 from itertools import chain
 from functools import lru_cache
 import json
 
-from .typeparsing import TypeAnnotationNode, NameAnnotationNode, parse_type_annotation_node
-from .typeparsing import RewriteRuleVisitor
-from .typeparsing import DirectInheritanceRewriting
-from .typeparsing import EraseOnceTypeRemoval
-from .typeparsing import PruneAnnotationVisitor
-from .typeparsing import AliasReplacementVisitor
-from .typeparsing.rewriterules import RemoveStandAlones
-from .typeparsing.rewriterules import RemoveRecursiveGenerics
-from .typeparsing.rewriterules import RemoveUnionWithAnys
-from .typeparsing.rewriterules import RemoveGenericWithAnys
+from src.data.preprocess.typilus.typeparsing.aliasreplacement import (
+    AliasReplacementVisitor,
+)
+from src.data.preprocess.typilus.typeparsing.erasure import (
+    EraseOnceTypeRemoval,
+)
+from src.data.preprocess.typilus.typeparsing.inheritancerewrite import (
+    DirectInheritanceRewriting,
+)
+from src.data.preprocess.typilus.typeparsing.nodes import (
+    parse_type_annotation_node,
+    TypeAnnotationNode,
+    NameAnnotationNode,
+)
+from src.data.preprocess.typilus.typeparsing.pruneannotations import (
+    PruneAnnotationVisitor,
+)
+from src.data.preprocess.typilus.typeparsing.rewriterules.removegenericwithany import (
+    RemoveGenericWithAnys,
+)
+from src.data.preprocess.typilus.typeparsing.rewriterules.removerecursivegenerics import (
+    RemoveRecursiveGenerics,
+)
+from src.data.preprocess.typilus.typeparsing.rewriterules.removestandalones import (
+    RemoveStandAlones,
+)
+from src.data.preprocess.typilus.typeparsing.rewriterules.removeunionwithanys import (
+    RemoveUnionWithAnys,
+)
+from src.data.preprocess.typilus.typeparsing.rewriterulevisitor import (
+    RewriteRuleVisitor,
+)
 
 
 class TypeLatticeGenerator:
 
     ANY_TYPE = parse_type_annotation_node("typing.Any")
 
-    def __init__(self, typing_rules_path: str, max_depth_size: int = 2, max_list_size: int = 2):
+    def __init__(
+        self,
+        typing_rules_path: str,
+        max_depth_size: int = 2,
+        max_list_size: int = 2,
+    ):
         self.__to_process = []
         self.__processed = set()
         self.new_type_rules = defaultdict(set)  # [new type, ref]
@@ -64,14 +92,25 @@ class TypeLatticeGenerator:
         )
 
         self.__rewrites_verbose_annotations = RewriteRuleVisitor(
-            [RemoveUnionWithAnys(), RemoveStandAlones(), RemoveRecursiveGenerics(), RemoveGenericWithAnys()]
+            [
+                RemoveUnionWithAnys(),
+                RemoveStandAlones(),
+                RemoveRecursiveGenerics(),
+                RemoveGenericWithAnys(),
+            ]
         )
         assert len(self.__ids_to_nodes) == len(set(repr(r) for r in self.__ids_to_nodes))
 
     def create_alias_replacement(
         self, imported_symbols: Dict[TypeAnnotationNode, TypeAnnotationNode]
     ) -> AliasReplacementVisitor:
-        return AliasReplacementVisitor(ChainMap(imported_symbols, self.__project_specific_aliases, self.__aliases))
+        return AliasReplacementVisitor(
+            ChainMap(
+                imported_symbols,
+                self.__project_specific_aliases,
+                self.__aliases,
+            )
+        )
 
     def __compute_non_generic_types(self):
         # Now get all the annotations that are *not* generics
@@ -148,7 +187,11 @@ class TypeLatticeGenerator:
         from_node_idx = self.__annotation_to_id(from_type)
         return frozenset((self.__ids_to_nodes[t] for t in self.is_a_edges[from_node_idx]))
 
-    def add_type(self, annotation: TypeAnnotationNode, imported_symbols: Dict[TypeAnnotationNode, TypeAnnotationNode]):
+    def add_type(
+        self,
+        annotation: TypeAnnotationNode,
+        imported_symbols: Dict[TypeAnnotationNode, TypeAnnotationNode],
+    ):
         annotation = annotation.accept_visitor(self.create_alias_replacement(imported_symbols))
         if annotation in self.__all_types:
             return
@@ -201,7 +244,8 @@ class TypeLatticeGenerator:
                 if not erasure_happened or len(self.__to_process) < 5000 or len(all_inherited_types_and_self) < 5:
                     for type_annotation in all_inherited_types_and_self:
                         type_annotation = type_annotation.accept_visitor(
-                            self.__max_depth_pruning_visitor, self.__max_annotation_depth
+                            self.__max_depth_pruning_visitor,
+                            self.__max_annotation_depth,
                         )
                         type_annotation = self.__rewrite_verbose(type_annotation)
                         type_has_been_seen = type_annotation in self.__all_types
@@ -224,14 +268,23 @@ class TypeLatticeGenerator:
         for parent in parents:
             if parent is None:
                 continue
-            assert isinstance(parent, TypeAnnotationNode), (parent, type(parent))
+            assert isinstance(parent, TypeAnnotationNode), (
+                parent,
+                type(parent),
+            )
             self.__add_is_a_relationship(class_name, parent)
 
-    def add_type_alias(self, new_annotation: TypeAnnotationNode, ref_annotation: TypeAnnotationNode) -> None:
+    def add_type_alias(
+        self,
+        new_annotation: TypeAnnotationNode,
+        ref_annotation: TypeAnnotationNode,
+    ) -> None:
         self.__project_specific_aliases[new_annotation] = ref_annotation
 
     def canonicalize_annotation(
-        self, annotation: TypeAnnotationNode, local_aliases: Dict[TypeAnnotationNode, TypeAnnotationNode]
+        self,
+        annotation: TypeAnnotationNode,
+        local_aliases: Dict[TypeAnnotationNode, TypeAnnotationNode],
     ) -> Optional[TypeAnnotationNode]:
         if annotation is None:
             return None
@@ -244,4 +297,7 @@ class TypeLatticeGenerator:
                 edges.append((from_type_idx, to_type_idx))
 
         assert len(self.__ids_to_nodes) == len(set(repr(r) for r in self.__ids_to_nodes))
-        return {"nodes": list((repr(type_annotation) for type_annotation in self.__ids_to_nodes)), "edges": edges}
+        return {
+            "nodes": list((repr(type_annotation) for type_annotation in self.__ids_to_nodes)),
+            "edges": edges,
+        }

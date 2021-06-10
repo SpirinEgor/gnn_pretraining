@@ -1,3 +1,4 @@
+# type: ignore
 from abc import ABC, abstractmethod
 
 from src.data.preprocess.typilus.typeparsing.nodes import TypeAnnotationNode

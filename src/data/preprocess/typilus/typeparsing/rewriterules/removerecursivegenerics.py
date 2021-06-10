@@ -1,3 +1,5 @@
+# type: ignore
+
 from typing import Optional
 
 from src.data.preprocess.typilus.typeparsing.nodes import (
@@ -7,9 +9,12 @@ from src.data.preprocess.typilus.typeparsing.nodes import (
     IndexAnnotationNode,
     TupleAnnotationNode,
 )
-from src.data.preprocess.typilus.typeparsing.rewriterules import RewriteRule
 
 __all__ = ["RemoveRecursiveGenerics"]
+
+from src.data.preprocess.typilus.typeparsing.rewriterules.rewriterule import (
+    RewriteRule,
+)
 
 
 class RemoveRecursiveGenerics(RewriteRule):
@@ -52,4 +57,7 @@ class RemoveRecursiveGenerics(RewriteRule):
                     next_slice.add(s.slice.value)
             else:
                 next_slice.add(s)
-        return SubscriptAnnotationNode(matching_node.value, IndexAnnotationNode(TupleAnnotationNode(next_slice)))
+        return SubscriptAnnotationNode(
+            matching_node.value,
+            IndexAnnotationNode(TupleAnnotationNode(next_slice)),
+        )

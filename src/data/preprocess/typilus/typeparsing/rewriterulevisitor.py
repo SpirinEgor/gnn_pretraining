@@ -1,3 +1,4 @@
+# type: ignore
 from typing import List
 
 from src.data.preprocess.typilus.typeparsing.nodes import (
@@ -9,8 +10,12 @@ from src.data.preprocess.typilus.typeparsing.nodes import (
     IndexAnnotationNode,
     ElipsisAnnotationNode,
 )
-from src.data.preprocess.typilus.typeparsing.rewriterules import RewriteRule
-from src.data.preprocess.typilus.typeparsing.visitor import TypeAnnotationVisitor
+from src.data.preprocess.typilus.typeparsing.rewriterules.rewriterule import (
+    RewriteRule,
+)
+from src.data.preprocess.typilus.typeparsing.visitor import (
+    TypeAnnotationVisitor,
+)
 
 
 class RewriteRuleVisitor(TypeAnnotationVisitor):

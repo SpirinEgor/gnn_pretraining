@@ -1,3 +1,4 @@
+# type: ignore
 from typing import Optional
 
 from src.data.preprocess.typilus.typeparsing.nodes import (
@@ -8,9 +9,12 @@ from src.data.preprocess.typilus.typeparsing.nodes import (
     ElipsisAnnotationNode,
     TupleAnnotationNode,
 )
-from src.data.preprocess.typilus.typeparsing.rewriterules import RewriteRule
 
 __all__ = ["RemoveUnionWithAnys"]
+
+from src.data.preprocess.typilus.typeparsing.rewriterules.rewriterule import (
+    RewriteRule,
+)
 
 
 class RemoveUnionWithAnys(RewriteRule):

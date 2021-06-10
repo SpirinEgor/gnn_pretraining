@@ -1,3 +1,4 @@
+# type: ignore
 from typing import Optional
 
 from src.data.preprocess.typilus.typeparsing.nodes import (
@@ -5,9 +6,12 @@ from src.data.preprocess.typilus.typeparsing.nodes import (
     TypeAnnotationNode,
     SubscriptAnnotationNode,
 )
-from src.data.preprocess.typilus.typeparsing.rewriterules import RewriteRule
 
 __all__ = ["RemoveStandAlones"]
+
+from src.data.preprocess.typilus.typeparsing.rewriterules.rewriterule import (
+    RewriteRule,
+)
 
 
 class RemoveStandAlones(RewriteRule):

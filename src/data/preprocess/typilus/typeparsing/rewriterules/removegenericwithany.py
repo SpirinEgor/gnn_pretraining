@@ -1,3 +1,5 @@
+# type: ignore
+
 from typing import Optional
 
 from src.data.preprocess.typilus.typeparsing.nodes import (
@@ -8,9 +10,12 @@ from src.data.preprocess.typilus.typeparsing.nodes import (
     ElipsisAnnotationNode,
     TupleAnnotationNode,
 )
-from src.data.preprocess.typilus.typeparsing.rewriterules import RewriteRule
 
 __all__ = ["RemoveGenericWithAnys"]
+
+from src.data.preprocess.typilus.typeparsing.rewriterules.rewriterule import (
+    RewriteRule,
+)
 
 
 class RemoveGenericWithAnys(RewriteRule):

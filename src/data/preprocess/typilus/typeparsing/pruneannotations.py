@@ -1,3 +1,4 @@
+# type: ignore
 from src.data.preprocess.typilus.typeparsing.nodes import (
     TypeAnnotationNode,
     SubscriptAnnotationNode,
@@ -7,7 +8,9 @@ from src.data.preprocess.typilus.typeparsing.nodes import (
     AttributeAnnotationNode,
     IndexAnnotationNode,
 )
-from src.data.preprocess.typilus.typeparsing.visitor import TypeAnnotationVisitor
+from src.data.preprocess.typilus.typeparsing.visitor import (
+    TypeAnnotationVisitor,
+)
 
 __all__ = ["PruneAnnotationVisitor"]
 
@@ -31,7 +34,8 @@ class PruneAnnotationVisitor(TypeAnnotationVisitor):
             pruned_slice = node.slice.accept_visitor(self, current_remaining_depth - 1)
 
         return SubscriptAnnotationNode(
-            value=node.value.accept_visitor(self, current_remaining_depth - 1), slice=pruned_slice
+            value=node.value.accept_visitor(self, current_remaining_depth - 1),
+            slice=pruned_slice,
         )
 
     def visit_tuple_annotation(self, node: TupleAnnotationNode, current_remaining_depth: int):

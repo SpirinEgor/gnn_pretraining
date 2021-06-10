@@ -1,3 +1,4 @@
+# type: ignore
 from itertools import product
 
 from src.data.preprocess.typilus.typeparsing.nodes import (
@@ -8,7 +9,9 @@ from src.data.preprocess.typilus.typeparsing.nodes import (
     IndexAnnotationNode,
     ElipsisAnnotationNode,
 )
-from src.data.preprocess.typilus.typeparsing.visitor import TypeAnnotationVisitor
+from src.data.preprocess.typilus.typeparsing.visitor import (
+    TypeAnnotationVisitor,
+)
 
 __all__ = ["EraseOnceTypeRemoval"]
 
@@ -23,7 +26,10 @@ class EraseOnceTypeRemoval(TypeAnnotationVisitor):
         if node.slice is None:
             erasure_happened_at_a_slice = False
         else:
-            next_slices, erasure_happened_at_a_slice = node.slice.accept_visitor(self)
+            (
+                next_slices,
+                erasure_happened_at_a_slice,
+            ) = node.slice.accept_visitor(self)
 
         if not erasure_happened_at_a_slice:
             return [node, node.value], True  # Erase type parameters

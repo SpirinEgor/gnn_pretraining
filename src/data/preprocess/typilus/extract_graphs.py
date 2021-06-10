@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# type: ignore
+
 """
 Usage:
     extractgraphs.py [options] SOURCE_FOLDER DUPLICATES_JSON SAVE_FOLDER TYPING_RULES
@@ -20,9 +22,11 @@ from glob import iglob
 from docopt import docopt
 import time
 
-from .graphgenerator import AstGraphGenerator
-from .type_lattice_generator import TypeLatticeGenerator
-from .typeparsing import FaultyAnnotation
+from src.data.preprocess.typilus.graphgenerator import AstGraphGenerator
+from src.data.preprocess.typilus.type_lattice_generator import (
+    TypeLatticeGenerator,
+)
+from src.data.preprocess.typilus.typeparsing.nodes import FaultyAnnotation
 
 
 class Monitoring:
@@ -66,7 +70,10 @@ def build_graph(
 
 
 def explore_files(
-    root_dir: str, duplicates_to_remove: Set[str], monitoring: Monitoring, type_lattice: TypeLatticeGenerator
+    root_dir: str,
+    duplicates_to_remove: Set[str],
+    monitoring: Monitoring,
+    type_lattice: TypeLatticeGenerator,
 ) -> Iterator[Tuple]:
     """
     Walks through the root_dir and process each file.
@@ -112,7 +119,10 @@ def main(arguments):
 
         # Save results
         with ChunkWriter(
-            out_folder=arguments["SAVE_FOLDER"], file_prefix="all-graphs", max_chunk_size=5000, file_suffix=".jsonl.gz"
+            out_folder=arguments["SAVE_FOLDER"],
+            file_prefix="all-graphs",
+            max_chunk_size=5000,
+            file_suffix=".jsonl.gz",
         ) as writer:
             for graph in outputs:
                 writer.add(graph)
@@ -125,7 +135,10 @@ def main(arguments):
 
     print("Building and saving the type graph...")
     type_lattice.build_graph()
-    save_jsonl_gz([type_lattice.return_json()], os.path.join(arguments["SAVE_FOLDER"], "_type_lattice.json.gz"))
+    save_jsonl_gz(
+        [type_lattice.return_json()],
+        os.path.join(arguments["SAVE_FOLDER"], "_type_lattice.json.gz"),
+    )
 
     print("Done.")
     print("Generated %d graphs out of %d snippets" % (monitoring.count - len(monitoring.errors), monitoring.count))

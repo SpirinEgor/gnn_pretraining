@@ -1,3 +1,4 @@
+# type: ignore
 from itertools import product
 from typing import Callable, Iterator, Set
 import random
@@ -11,7 +12,9 @@ from src.data.preprocess.typilus.typeparsing.nodes import (
     IndexAnnotationNode,
     ElipsisAnnotationNode,
 )
-from src.data.preprocess.typilus.typeparsing.visitor import TypeAnnotationVisitor
+from src.data.preprocess.typilus.typeparsing.visitor import (
+    TypeAnnotationVisitor,
+)
 
 __all__ = ["DirectInheritanceRewriting"]
 
