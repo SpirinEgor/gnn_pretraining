@@ -1,8 +1,9 @@
 import json
-from typing import Iterable
+from typing import Iterator
 
 from omegaconf import DictConfig
 from torch.utils.data import IterableDataset, get_worker_info
+from torch_geometric.data import Data
 
 from src.data.graph import Graph
 from src.data.vocabulary import Vocabulary
@@ -15,7 +16,7 @@ class GraphDataset(IterableDataset):
         self.__config = config
         self.__vocabulary = vocabulary
 
-    def __iter__(self) -> Iterable[Graph]:
+    def __iter__(self) -> Iterator[Data]:
         worker_info = get_worker_info()
         if worker_info is not None:
             raise RuntimeError("Graph dataset does not support multiple workers")
