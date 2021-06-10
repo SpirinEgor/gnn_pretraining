@@ -1,3 +1,4 @@
+import gzip
 import json
 from typing import Iterator
 
@@ -20,8 +21,8 @@ class GraphDataset(IterableDataset):
         worker_info = get_worker_info()
         if worker_info is not None:
             raise RuntimeError("Graph dataset does not support multiple workers")
-        with open(self.__graph_filepath, "r") as input_file:
+        with gzip.open(self.__graph_filepath, "rb") as input_file:
             for line in input_file:
-                raw_graph = json.loads(line)
+                raw_graph = json.loads(line.decode("utf-8"))
                 graph = Graph.from_dict(raw_graph).to_torch(self.__vocabulary, self.__config.max_token_parts)
                 yield graph
