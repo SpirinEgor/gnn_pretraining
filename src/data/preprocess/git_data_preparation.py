@@ -4,11 +4,19 @@ import json
 import os
 import random
 import re
+from dataclasses import dataclass
 from typing import Tuple, Iterator, List, Dict, Optional
 
 from tqdm.auto import tqdm
 
-Example = collections.namedtuple("Example", ["language", "project_name", "file_name", "source_code"])
+
+@dataclass
+class Example:
+    language: str
+    project_name: str
+    file_name: str
+    source_code: str
+
 
 _DEFAULT_STATS_BOUNDARIES = {
     "Python": {"max_line_len": (37, 741), "content_len": (111, 42476)},
