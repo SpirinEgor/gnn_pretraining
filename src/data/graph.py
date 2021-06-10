@@ -2,6 +2,12 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import List, Dict
 
+import torch
+from dpu_utils.codeutils import split_identifier_into_parts
+from torch_geometric.data import Data
+
+from src.data.vocabulary import Vocabulary
+
 
 class NodeType(Enum):
     """Enum class to represent node type.
@@ -24,7 +30,7 @@ class Node:
 
     id: int
     token: str
-    group: NodeType
+    type: NodeType
 
 
 class EdgeType(Enum):
@@ -32,10 +38,9 @@ class EdgeType(Enum):
     - NEXT: two consecutive token nodes.
     - CHILD: syntax nodes to their children nodes and tokens.
     - NEXT_USE: each token that is bound to a variable to all potential next uses of the variable.
-    - NEXT_LEXICAL_USE: each token that is bound to a variable to its next lexical use.
     - LAST_LEXICAL_USE: each token that is bound to a variable to its last lexical use.
     - COMPUTED_FROM: the left hand side of an assignment expression to its right hand-side.
-    - RETURNS_TO: all return/ yield statements to the function declaration node where control returns.
+    - RETURNS_TO: all return/yield statements to the function declaration node where control returns.
     - OCCURRENCE_OF: all token and syntax nodes that bind to a symbol to the respective symbol node.
     - SUBTOKEN_OF: each identifier token node to the vocabulary nodes of its subtokens.
     """
@@ -43,12 +48,11 @@ class EdgeType(Enum):
     NEXT = 0
     CHILD = 1
     NEXT_USE = 2
-    NEXT_LEXICAL_USE = 3
-    LAST_LEXICAL_USE = 4
-    COMPUTED_FROM = 5
-    RETURNS_TO = 6
-    OCCURRENCE_OF = 7
-    SUBTOKEN_OF = 8
+    LAST_LEXICAL_USE = 3
+    COMPUTED_FROM = 4
+    RETURNS_TO = 5
+    OCCURRENCE_OF = 6
+    SUBTOKEN_OF = 7
 
 
 @dataclass
@@ -58,7 +62,7 @@ class Edge:
     id: int
     from_node: Node
     to_node: Node
-    edge_type: EdgeType
+    type: EdgeType
 
 
 class Graph:
@@ -99,3 +103,21 @@ class Graph:
     @property
     def edges(self) -> List[Edge]:
         return self.__edges
+
+    def to_torch(self, vocabulary: Vocabulary, max_token_parts: int) -> Data:
+        """Convert this graph into torch-geometric graph
+
+        :param vocabulary: vocabulary to convert token parts into ids
+        :param max_token_parts: maximum number of token parts into tokenized version
+        :return:
+        """
+        token = torch.full((len(self.__nodes), max_token_parts), vocabulary.pad[1], dtype=torch.long)
+        for i, node in enumerate(self.__nodes):
+            subtoken_ids = [vocabulary[st] for st in split_identifier_into_parts(node.token)[:max_token_parts]]
+            token[i, : len(subtoken_ids)] = torch.tensor(subtoken_ids)
+
+        node_type = torch.tensor([n.type.value for n in self.__nodes], dtype=torch.long)
+        edge_index = torch.tensor(zip(*[[e.from_node.id, e.to_node.id] for e in self.__edges]), dtype=torch.long)
+        edge_type = torch.tensor([e.type.value for e in self.__edges], dtype=torch.long)
+
+        return Data(token=token, node_type=node_type, edge_index=edge_index, edge_type=edge_type)

@@ -1,7 +1,11 @@
 black==21.5b2
-mypy==0.812
+mypy==0.901
 pytest==6.2.4
 docopt==0.6.2
 tqdm==4.61.0
+torch==1.8.1
+torch-geometric==1.7.0
+torch-scatter==2.0.7 # required for torch geometric
+omegaconf==2.1.0
 
 dpu-utils
