@@ -1,9 +1,10 @@
+# type: ignore
 import typing
 from enum import Enum, auto
 from typing import Optional, NamedTuple, List, Dict
 from pprint import PrettyPrinter
 
-from .typeparsing import TypeAnnotationNode
+from src.data.preprocess.typilus.typeparsing.nodes import TypeAnnotationNode
 
 
 class EdgeType(Enum):
@@ -20,7 +21,12 @@ class EdgeType(Enum):
 class TokenNode:
     """A wrapper around token nodes, such that an object-identity is used for comparing nodes."""
 
-    def __init__(self, token: str, lineno: Optional[int] = None, col_offset: Optional[int] = None):
+    def __init__(
+        self,
+        token: str,
+        lineno: Optional[int] = None,
+        col_offset: Optional[int] = None,
+    ):
         assert isinstance(token, str)
         self.token = token
         self.lineno = lineno

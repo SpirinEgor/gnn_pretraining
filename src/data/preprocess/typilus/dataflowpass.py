@@ -1,3 +1,4 @@
+# type: ignore
 from collections import defaultdict
 from itertools import chain
 from typing import Any, Dict, Optional, Set, Union, List
@@ -132,9 +133,14 @@ class DataflowPass(NodeVisitor):
         return cloned
 
     def __loop_back_after(
-        self, last_uses_at_end_of_loop: Dict[Any, Set[Any]], last_uses_just_before_looping_point: Dict[Any, Set[Any]]
+        self,
+        last_uses_at_end_of_loop: Dict[Any, Set[Any]],
+        last_uses_just_before_looping_point: Dict[Any, Set[Any]],
     ) -> None:
-        for symbol, last_use_before_looping_point in last_uses_just_before_looping_point.items():
+        for (
+            symbol,
+            last_use_before_looping_point,
+        ) in last_uses_just_before_looping_point.items():
             first_use_after_looping_point = set(
                 chain(
                     *(
@@ -170,9 +176,13 @@ class DataflowPass(NodeVisitor):
 
         self.visit(node.target)
         self.__visit_statement_block(node.body)
-        self.__loop_back_after(self.__merge_uses(self.__last_use, self.__continue_uses), last_use_before_loop)
+        self.__loop_back_after(
+            self.__merge_uses(self.__last_use, self.__continue_uses),
+            last_use_before_loop,
+        )
         self.__last_use = self.__merge_uses(
-            self.__last_use, self.__merge_uses(last_use_before_loop, self.__continue_uses)
+            self.__last_use,
+            self.__merge_uses(last_use_before_loop, self.__continue_uses),
         )
 
         if node.orelse is not None:
@@ -260,10 +270,14 @@ class DataflowPass(NodeVisitor):
         outer_break, outer_continue = self.__break_uses, self.__continue_uses
 
         self.__visit_statement_block(node.body)
-        self.__loop_back_after(self.__merge_uses(self.__last_use, self.__continue_uses), last_use_before_loop)
+        self.__loop_back_after(
+            self.__merge_uses(self.__last_use, self.__continue_uses),
+            last_use_before_loop,
+        )
 
         self.__last_use = self.__merge_uses(
-            self.__last_use, self.__merge_uses(last_use_after_loop_test, self.__continue_uses)
+            self.__last_use,
+            self.__merge_uses(last_use_after_loop_test, self.__continue_uses),
         )
         if node.orelse is not None:
             last_use_before_branch = self.__clone_last_uses()

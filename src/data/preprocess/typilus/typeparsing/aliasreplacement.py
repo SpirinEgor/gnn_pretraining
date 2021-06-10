@@ -1,3 +1,4 @@
+# type: ignore
 from typing import Dict, Tuple
 
 from src.data.preprocess.typilus.typeparsing.nodes import (
@@ -9,7 +10,9 @@ from src.data.preprocess.typilus.typeparsing.nodes import (
     IndexAnnotationNode,
     ElipsisAnnotationNode,
 )
-from src.data.preprocess.typilus.typeparsing.visitor import TypeAnnotationVisitor
+from src.data.preprocess.typilus.typeparsing.visitor import (
+    TypeAnnotationVisitor,
+)
 
 __all__ = ["AliasReplacementVisitor"]
 

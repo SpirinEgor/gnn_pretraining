@@ -13,7 +13,12 @@ PRINT_MOST_COMMON = 10
 
 def configure_arg_parser() -> ArgumentParser:
     arg_parser = ArgumentParser()
-    arg_parser.add_argument("-d", "--data", required=True, help="Path to data corpus in JSONL format")
+    arg_parser.add_argument(
+        "-d",
+        "--data",
+        required=True,
+        help="Path to data corpus in JSONL format",
+    )
     return arg_parser
 
 
@@ -22,7 +27,12 @@ def collect_vocabulary(data_path: str):
     with open(data_path, "r") as data_file:
         for line in tqdm(data_file):
             raw_graph = json.loads(line)
-            token_counter.update(sum([split_identifier_into_parts(t) for t in raw_graph["nodes"]], []))
+            token_counter.update(
+                sum(
+                    [split_identifier_into_parts(t) for t in raw_graph["nodes"]],
+                    [],
+                )
+            )
     output_dir = dirname(data_path)
     with open(join(output_dir, "vocabulary.pkl"), "wb") as vocab_file:
         pickle.dump(token_counter, vocab_file)

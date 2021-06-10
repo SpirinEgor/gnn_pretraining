@@ -1,3 +1,4 @@
+# type: ignore
 import os
 from argparse import ArgumentParser, Namespace
 from glob import iglob
@@ -7,7 +8,9 @@ from dpu_utils.utils import ChunkWriter
 from tqdm import tqdm
 
 from src.data.preprocess.typilus.graphgenerator import AstGraphGenerator
-from src.data.preprocess.typilus.type_lattice_generator import TypeLatticeGenerator
+from src.data.preprocess.typilus.type_lattice_generator import (
+    TypeLatticeGenerator,
+)
 
 
 def get_files(root: str):
@@ -47,10 +50,16 @@ def run(args: Namespace):
 
     if args.format == "dot":
         for i, (generator, graph, fname) in tqdm(enumerate(graph_generator)):
-            generator.to_dot(os.path.join(args.output, f"graph_{i}.dot"), initial_comment=fname)
+            generator.to_dot(
+                os.path.join(args.output, f"graph_{i}.dot"),
+                initial_comment=fname,
+            )
     elif args.format == "jsonl_gz":
         with ChunkWriter(
-            out_folder=args.output, file_prefix="all-graphs", max_chunk_size=5000, file_suffix=".jsonl.gz"
+            out_folder=args.output,
+            file_prefix="all-graphs",
+            max_chunk_size=5000,
+            file_suffix=".jsonl.gz",
         ) as writer:
             for i, (generator, graph, fname) in tqdm(enumerate(graph_generator)):
                 graph["filename"] = fname
@@ -72,12 +81,26 @@ def run(args: Namespace):
 
 if __name__ == "__main__":
     arg_parser = ArgumentParser()
-    arg_parser.add_argument("-i", "--input", type=str, required=True, help="Directory that will be parsed recursively.")
     arg_parser.add_argument(
-        "-o", "--output", type=str, required=True, help="Directory where the output will be stored."
+        "-i",
+        "--input",
+        type=str,
+        required=True,
+        help="Directory that will be parsed recursively.",
     )
     arg_parser.add_argument(
-        "-f", "--format", type=str, default="dot", help="Output format, either `dot` (default) or `jsonl_gz`."
+        "-o",
+        "--output",
+        type=str,
+        required=True,
+        help="Directory where the output will be stored.",
+    )
+    arg_parser.add_argument(
+        "-f",
+        "--format",
+        type=str,
+        default="dot",
+        help="Output format, either `dot` (default) or `jsonl_gz`.",
     )
     arg_parser.add_argument(
         "--type-rules",
@@ -86,7 +109,9 @@ if __name__ == "__main__":
         help="Path to json with type rules. Do not change, unless you extract data for type inference.",
     )
     arg_parser.add_argument(
-        "--print-errors", action="store_true", help="If passed, the errors for all failed files will be printed."
+        "--print-errors",
+        action="store_true",
+        help="If passed, the errors for all failed files will be printed.",
     )
     args = arg_parser.parse_args()
     run(args)
