@@ -133,6 +133,7 @@ def process_holdout(
     output_file = os.path.join(dest_path, f"graphs_{holdout}.jsonl.gz")
 
     examples = data.get_examples(holdout) if isinstance(data, GitProjectExtractor) else data
+    examples_length = data.get_num_examples(holdout) if isinstance(data, GitProjectExtractor) else len(examples)
 
     with Manager() as m:
         message_queue = m.Queue()  # type: ignore
@@ -141,7 +142,9 @@ def process_holdout(
         pool.apply_async(handle_queue_message, (message_queue, output_file))
 
         process_func = partial(extract_graphs, queue=message_queue, vocabulary=need_vocabulary)
-        counters: List = pool.map(process_func, tqdm(examples, desc=f"Processing graphs from {holdout}"))
+        counters: List = pool.map(
+            process_func, tqdm(examples, desc=f"Processing graphs from {holdout}...", total=examples_length)
+        )
 
         message_queue.put(QueueMessage(None, None, True))
 

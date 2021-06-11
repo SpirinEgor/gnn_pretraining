@@ -34,28 +34,34 @@ class GitProjectExtractor:
         random_seed: int,
         val_part: Optional[float],
         test_part: Optional[float],
+        languages: Tuple[str] = ("Python",),
     ):
         self._path: str = raw_data_path
         self._rng: random.Random = random.Random(random_seed)
+        self._found_files_amount: Optional[int] = None
 
-        self._val_part: float = val_part if val_part is not None else 0.0
-        self._test_part: float = test_part if test_part is not None else 0.0
-        assert self._val_part + self._test_part <= 1.0
-        self._train_part: float = 1.0 - self._val_part - self._test_part
+        self._holdout_sizes: Dict[str, float] = dict()
+        self._holdout_sizes["val"] = val_part if val_part is not None else 0.0
+        self._holdout_sizes["test"] = test_part if test_part is not None else 0.0
+        assert self._holdout_sizes["val"] + self._holdout_sizes["test"] <= 1.0
+        self._holdout_sizes["train"] = 1.0 - self._holdout_sizes["val"] - self._holdout_sizes["test"]
 
         self._processed_projects: Optional[Dict[str, List[List[Tuple[str, str, str, str]]]]] = None
 
+        print(f"Extracting projects metainfo...")
+        self._extract_projects(languages)
+
+    def get_num_examples(self, holdout: str) -> int:
+        assert self._found_files_amount is not None
+        return int(self._found_files_amount * self._holdout_sizes[holdout])
+
     # Main method
-    def get_examples(self, holdout: str, languages: Tuple[str] = ("Python",)) -> Iterator[Example]:
+    def get_examples(self, holdout: str) -> Iterator[Example]:
         """Read all files in specified language from dataset and return a project iterator"
 
         :param holdout: which holdout to return. Can be either "train", "val" and "test"
-        :param languages: programming languages, projects in which will be searched
         :return: Iterator, which returns projects - Lists of Tuples, each of which represent project's files
         """
-        if self._processed_projects is None:
-            print(f"Extracting projects metainfo...")
-            self._extract_projects(languages)
         return self._generate_examples_iter(holdout)
 
     # -------------------------------------- Stage methods -------------------------------------- #
@@ -66,25 +72,25 @@ class GitProjectExtractor:
         (
             processed_projects,
             skipped_projects,
-            found_files_amount,
+            self._found_files_amount,
         ) = self._process_projects(projects)
 
         self._processed_projects = dict()
         self._rng.shuffle(processed_projects)
-        train_projects_amount = int(self._train_part * len(processed_projects))
-        val_projects_amount = int(self._val_part * len(processed_projects))
+        train_projects_amount = int(self._holdout_sizes["train"] * len(processed_projects))
+        val_projects_amount = int(self._holdout_sizes["val"] * len(processed_projects))
         self._processed_projects["train"] = processed_projects[:train_projects_amount]
         self._processed_projects["val"] = processed_projects[
             train_projects_amount : train_projects_amount + val_projects_amount
         ]
         self._processed_projects["test"] = processed_projects[train_projects_amount + val_projects_amount :]
 
-        tqdm.write(
-            f"Found {found_projects_amount} projects with {found_files_amount} files, "
+        print(
+            f"Found {found_projects_amount} projects with {self._found_files_amount} files, "
             f"skipped {len(skipped_projects)} projects\n"
         )
         if len(skipped_projects) != 0:
-            tqdm.write(f"Skipped projects: {skipped_projects}\n")
+            print(f"Skipped projects: {skipped_projects}\n")
 
     def _generate_examples_iter(self, holdout: str) -> Iterator[Example]:
         """Yield all project files, one project at a time"""
@@ -96,10 +102,7 @@ class GitProjectExtractor:
         bucket_to_shuffle: List[Example] = []
 
         assert self._processed_projects is not None
-        for project in tqdm(
-            self._processed_projects[holdout],
-            desc=f"Reading {holdout} projects...",
-        ):
+        for project in self._processed_projects[holdout]:
             examples = (
                 Example(language, proj_name, filename, read_file(path))
                 for language, proj_name, filename, path in project
