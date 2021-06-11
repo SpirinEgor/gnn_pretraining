@@ -18,10 +18,10 @@ class NodeType(Enum):
     - symbol nodes that represent a unique symbol in the symbol table, such as a variable or function parameter.
     """
 
-    TOKEN = 1
-    NON_TERMINAL = 2
-    VOCABULARY = 3
-    SYMBOL = 4
+    TOKEN = 0
+    NON_TERMINAL = 1
+    VOCABULARY = 2
+    SYMBOL = 3
 
 
 @dataclass

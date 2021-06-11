@@ -25,3 +25,6 @@ class Vocabulary:
 
     def __getitem__(self, item: str):
         return self.__token2id.get(item, self.__unk_id)
+
+    def __len__(self) -> int:
+        return len(self.__token2id)

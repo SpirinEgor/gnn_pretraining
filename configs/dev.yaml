@@ -1,14 +1,39 @@
 data_folder: ../data/gnn_pretraining/dev
 
+resume_from_checkpoint: null
+
+seed: 7
+offline: true
+# Training in notebooks (e.g. Google Colab) may crash with too small value
+progress_bar_refresh_rate: 1
+
 vocabulary:
   name: "vocabulary.pkl"
   n_tokens: 8917
 
 data:
-  batch_size: 128
-  test_batch_size: 256
+  batch_size: 5
+  test_batch_size: 5
   max_token_parts: 5
   task:
     name: "masking"
     p_node: 0.5
     p_edge: 0.5
+
+model:
+  embed_dim: 10
+  hidden_dim: 10
+  n_hidden_layers: 1
+
+optimizer:
+  lr: 0.001
+  weight_decay: 0
+  decay_gamma: 0.75
+
+train:
+  n_epochs: 300
+  patience: 10
+  clip_norm: 10
+  val_every_epoch: 1
+  save_every_epoch: 1
+  log_every_n_steps: 50

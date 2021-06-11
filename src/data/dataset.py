@@ -7,14 +7,11 @@ from omegaconf import DictConfig
 from torch.utils.data import IterableDataset, get_worker_info
 from torch_geometric.data import Data
 
-from src.data.graph import Graph
+from src.data.graph import Graph, NodeType, EdgeType
 from src.data.vocabulary import Vocabulary
 
 
 class GraphDataset(IterableDataset):
-
-    __MASK_VALUE = -1
-
     def __init__(self, graph_filepath: str, vocabulary: Vocabulary, config: DictConfig):
         super().__init__()
         self.__graph_filepath = graph_filepath
@@ -35,12 +32,13 @@ class GraphDataset(IterableDataset):
                     raise ValueError(f"Unknown task for graph learning: {self.__config.task.name}")
                 yield graph
 
-    def _mask_type(self, graph: Data, attr_name: str, p: float):
+    @staticmethod
+    def _mask_type(graph: Data, attr_name: str, p: float, mask_value: int):
         target, mask, attr_type = f"{attr_name}_target", f"{attr_name}_mask", f"{attr_name}_type"
         graph[target] = graph[attr_type].clone().detach()
         graph[mask] = torch.rand(graph[target].shape[0]) < p
-        graph[attr_type][graph[mask]] = self.__MASK_VALUE
+        graph[attr_type][graph[mask]] = mask_value
 
     def _mask_graph_task(self, graph: Data):
-        self._mask_type(graph, "node", self.__config.task.p_node)
-        self._mask_type(graph, "edge", self.__config.task.p_edge)
+        self._mask_type(graph, "node", self.__config.task.p_node, len(NodeType))
+        self._mask_type(graph, "edge", self.__config.task.p_edge, len(EdgeType))
