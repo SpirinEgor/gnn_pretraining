@@ -1,4 +1,5 @@
 # type: ignore
+import logging
 from typing import Dict, Tuple
 
 from src.data.preprocess.typilus.typeparsing.nodes import (
@@ -13,6 +14,10 @@ from src.data.preprocess.typilus.typeparsing.nodes import (
 from src.data.preprocess.typilus.typeparsing.visitor import (
     TypeAnnotationVisitor,
 )
+
+LOG_FILENAME = f"typilus_{__name__}.txt"
+logging.basicConfig(filename=LOG_FILENAME, level=logging.DEBUG, filemode="w")
+logger = logging.getLogger(__name__)
 
 __all__ = ["AliasReplacementVisitor"]
 
@@ -30,7 +35,7 @@ class AliasReplacementVisitor(TypeAnnotationVisitor):
             node = self.__replacement_map[node]
             replaced = True
             if node in seen_names:
-                print(f"WARNING: Circle between {seen_names}. Picking the {node} for now.")
+                logging.warning(f"WARNING: Circle between {seen_names}. Picking the {node} for now.")
                 break
             else:
                 seen_names.add(node)

@@ -1,4 +1,5 @@
 # type: ignore
+import logging
 from typing import Any, List, Dict, FrozenSet, Set, Tuple, Optional
 from collections import defaultdict, ChainMap
 from itertools import chain
@@ -37,6 +38,11 @@ from src.data.preprocess.typilus.typeparsing.rewriterules.removeunionwithanys im
 from src.data.preprocess.typilus.typeparsing.rewriterulevisitor import (
     RewriteRuleVisitor,
 )
+
+
+LOG_FILENAME = f"typilus_{__name__}.txt"
+logging.basicConfig(filename=LOG_FILENAME, level=logging.DEBUG, filemode="w")
+logger = logging.getLogger(__name__)
 
 
 class TypeLatticeGenerator:
@@ -178,7 +184,7 @@ class TypeLatticeGenerator:
 
         all_reachable = self.__all_reachable_from(to_node_idx)
         if from_node_idx in all_reachable:
-            print(f"The {from_node_idx}<->{to_node_idx} would be a circle. Ignoring.")
+            logger.warning(f"The {from_node_idx}<->{to_node_idx} would be a circle. Ignoring.")
             return
 
         self.is_a_edges[from_node_idx].add(to_node_idx)
@@ -211,7 +217,7 @@ class TypeLatticeGenerator:
         return type_annotation.accept_visitor(self.__rewrites_verbose_annotations, None)
 
     def build_graph(self):
-        print("Building type graph for project... (%s elements to process)" % len(self.__to_process))
+        logger.info("Building type graph for project... (%s elements to process)" % len(self.__to_process))
         i = 0
 
         while len(self.__to_process) > 0:
@@ -222,10 +228,10 @@ class TypeLatticeGenerator:
 
             i += 1
             if i > 500:
-                print("Building type graph for project... (%s elements to process)" % len(self.__to_process))
+                logger.info("Building type graph for project... (%s elements to process)" % len(self.__to_process))
                 i = 0
                 if len(self.__to_process) > 3000:
-                    print(f"Queue quite long. Current element {next_type}")
+                    logger.info(f"Queue quite long. Current element {next_type}")
 
             all_erasures, erasure_happened = self.__compute_erasures(next_type)
             if erasure_happened:
@@ -261,7 +267,7 @@ class TypeLatticeGenerator:
 
         # Clean up project-specific aliases
         self.__project_specific_aliases.clear()
-        print("Done building type graph")
+        logger.info("Done building type graph")
 
     def add_class(self, class_name: str, parents: List[TypeAnnotationNode]) -> None:
         class_name = NameAnnotationNode(class_name)
