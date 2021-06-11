@@ -1,7 +1,7 @@
 # GNN Pre-training & fine-tuning
 Pre-training and fine-tuning GNN model on source code 
 
-To correct usage install all requirements:
+For correct usage install all requirements:
 ```shell
 pip install -r requirements.txt
 ```
@@ -10,11 +10,20 @@ pip install -r requirements.txt
 
 [src.data.preprocess](src/data/preprocess) module provide all necessary functionality to prepare data for further training.
 
-Source code should be provided in single file with the following format:
+**Option 1**: Source code should be provided in single file with the following format:
 - Examples are separated between each other by special symbol: `␢`
 - Inside example source code and filename (or other label) are separated by special symbol: `₣`.
 
-_TODO: Add information about extracting from GitHub repos_
+**Option 2**: Or you can use raw data which can be obtained from GitHub using this [repository](https://github.com/BarracudaPff/FLCC-Dataset-Description). Unfortunately, already scrapped repositories are still unavailable due to privacy policy, but you can download such data by yourself.
+
+### Preprocessed data
+
+All source and preprocessed data can be obtained from this table:
+| name  	| source                                                                                                                  	| preprocessed                                                                                                               	| holdout sizes (train/val/test) 	| # tokens 	|
+|-------	|-------------------------------------------------------------------------------------------------------------------------	|----------------------------------------------------------------------------------------------------------------------------	|--------------------------------	|----------	|
+| dev   	| [s3 link](https://s3.eu-west-1.amazonaws.com/datasets.ml.labs.aws.intellij.net/gnn_pretraining/dev/dev.txt) (3.6Mb)     	| [s3 link](https://s3.eu-west-1.amazonaws.com/datasets.ml.labs.aws.intellij.net/gnn_pretraining/dev/dev.tar.gz) (15Mb)      	| 552/185/192                    	| 12269    	|
+| small 	| [s3 link](https://s3.eu-west-1.amazonaws.com/datasets.ml.labs.aws.intellij.net/gnn_pretraining/small/small.txt) (287Mb) 	| [s3 link](https://s3.eu-west-1.amazonaws.com/datasets.ml.labs.aws.intellij.net/gnn_pretraining/small/small.tar.gz) (1.2Gb) 	| 44683/14892/14934              	| 213875   	|
+
 
 ### Code2graph
 
@@ -32,14 +41,6 @@ PYTHONPATH="." python src/data/preprocess/preprocess.py
 `--vocabulary` flag used to collect information about tokens appearance in code.
 
 The output of preprocessing is a 3 gzipped JSONL file. Each file correspond to separate holdout (`train`, `val`, `test`). Each line is a standalone JSON that describes one graph.
-
-### Preprocessed data
-
-All source and preprocessed data can be obtained from this table:
-| name  	| source                                                                                                                  	| preprocessed                                                                                                               	| holdout sizes (train/val/test) 	| # tokens 	|
-|-------	|-------------------------------------------------------------------------------------------------------------------------	|----------------------------------------------------------------------------------------------------------------------------	|--------------------------------	|----------	|
-| dev   	| [s3 link](https://s3.eu-west-1.amazonaws.com/datasets.ml.labs.aws.intellij.net/gnn_pretraining/dev/dev.txt) (3.6Mb)     	| [s3 link](https://s3.eu-west-1.amazonaws.com/datasets.ml.labs.aws.intellij.net/gnn_pretraining/dev/dev.tar.gz) (15Mb)      	| 552/185/192                    	| 12269    	|
-| small 	| [s3 link](https://s3.eu-west-1.amazonaws.com/datasets.ml.labs.aws.intellij.net/gnn_pretraining/small/small.txt) (287Mb) 	| [s3 link](https://s3.eu-west-1.amazonaws.com/datasets.ml.labs.aws.intellij.net/gnn_pretraining/small/small.tar.gz) (1.2Gb) 	| 44683/14892/14934              	| 213875   	|
 
 ## Model pre-training
 
