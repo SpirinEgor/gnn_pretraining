@@ -47,12 +47,6 @@ def configure_arg_parser() -> ArgumentParser:
         help="Path to directory where graphs will be stored",
     )
     arg_parser.add_argument(
-        "--train_part",
-        type=float,
-        default=0.7,
-        help="Part of the dataset which will be used for training",
-    )
-    arg_parser.add_argument(
         "--val_part",
         type=float,
         default=0.2,
