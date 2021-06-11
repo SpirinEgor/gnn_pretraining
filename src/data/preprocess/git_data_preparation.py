@@ -48,7 +48,6 @@ class GitProjectExtractor:
     def get_examples(self, holdout: str, languages: Tuple[str] = ("Python",)) -> Iterator[Example]:
         """Read all files in specified language from dataset and return a project iterator"
 
-        :param raw_data_path: path to the "dataset/v3" directory
         :param holdout: which holdout to return. Can be either "train", "val" and "test"
         :param languages: programming languages, projects in which will be searched
         :return: Iterator, which returns projects - Lists of Tuples, each of which represent project's files
@@ -168,7 +167,6 @@ class GitProjectExtractor:
     ) -> Tuple[List[List[Tuple[str, str, str, str]]], List[str], int]:
         """Search for projects, extract real project names from dataset
 
-        :param raw_data_path: path to the "dataset/v3" directory
         :param projects: output of _get_files_projects.
 
         :return: a Tuple,
