@@ -1,8 +1,9 @@
-from typing import Dict, List, Union
+from typing import Dict, Union
 
 import torch
 from omegaconf import DictConfig
 from pytorch_lightning import LightningModule
+from pytorch_lightning.utilities.types import EPOCH_OUTPUT
 from torch import nn
 from torch_geometric.data import Data, Batch
 from torchmetrics import F1
@@ -27,7 +28,7 @@ class GINEConvMaskingPretraining(LightningModule):
             self.__metrics[f"{holdout}_node_type_f1"] = F1(len(NodeType))
             self.__metrics[f"{holdout}_edge_type_f1"] = F1(len(EdgeType))
 
-    def forward(self, input_graph: Union[Data, Batch]):
+    def forward(self, input_graph: Union[Data, Batch]):  # type: ignore
         return self.__encoder(input_graph)
 
     def configure_optimizers(self) -> Dict:
@@ -80,7 +81,7 @@ class GINEConvMaskingPretraining(LightningModule):
             f"{step}/f1-edge type": edge_type_f1_score,
         }
 
-    def training_step(self, batched_graph: Batch, batch_idx: int) -> torch.Tensor:
+    def training_step(self, batched_graph: Batch, batch_idx: int) -> torch.Tensor:  # type: ignore
         result = self._shared_step(batched_graph, "train")
         loss = result["train/loss"]
         self.log_dict(result, on_step=True, on_epoch=False)
@@ -88,21 +89,20 @@ class GINEConvMaskingPretraining(LightningModule):
         self.log("f1-edge type", result["train/f1-edge type"], prog_bar=True, logger=False)
         return loss
 
-    def validation_step(self, batched_graph: Batch, batch_idx: int) -> torch.Tensor:
+    def validation_step(self, batched_graph: Batch, batch_idx: int) -> torch.Tensor:  # type: ignore
         result = self._shared_step(batched_graph, "val")
         return result["val/loss"]
 
-    def test_step(self, batched_graph: Batch, batch_idx: int) -> torch.Tensor:
+    def test_step(self, batched_graph: Batch, batch_idx: int) -> torch.Tensor:  # type: ignore
         result = self._shared_step(batched_graph, "test")
         return result["test/loss"]
 
     # ========== EPOCH END ==========
 
-    def _shared_epoch_end(self, step_outputs: List[Union[torch.Tensor, Dict]], step: str):
+    def _shared_epoch_end(self, step_outputs: EPOCH_OUTPUT, step: str):
         with torch.no_grad():
-            if isinstance(step_outputs[0], dict):
-                step_outputs = [so["loss"] for so in step_outputs]
-            mean_loss = torch.stack(step_outputs).mean()
+            losses = [so if isinstance(so, torch.Tensor) else so["loss"] for so in step_outputs]
+            mean_loss = torch.stack(losses).mean()
         total_node_type_f1 = self.__metrics[f"{step}_node_type_f1"].compute()
         total_edge_type_f1 = self.__metrics[f"{step}_edge_type_f1"].compute()
         log = {
@@ -112,11 +112,11 @@ class GINEConvMaskingPretraining(LightningModule):
         }
         self.log_dict(log, on_step=False, on_epoch=True)
 
-    def training_epoch_end(self, training_step_output: List[torch.Tensor]):
+    def training_epoch_end(self, training_step_output: EPOCH_OUTPUT):
         self._shared_epoch_end(training_step_output, "train")
 
-    def validation_epoch_end(self, validation_step_output: List[torch.Tensor]):
+    def validation_epoch_end(self, validation_step_output: EPOCH_OUTPUT):
         self._shared_epoch_end(validation_step_output, "val")
 
-    def test_epoch_end(self, test_step_output: List[torch.Tensor]):
+    def test_epoch_end(self, test_step_output: EPOCH_OUTPUT):
         self._shared_epoch_end(test_step_output, "test")
