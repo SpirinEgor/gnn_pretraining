@@ -4,7 +4,9 @@ import json
 import logging
 import random
 from argparse import ArgumentParser
-from multiprocessing import Pool, cpu_count
+from dataclasses import dataclass
+from functools import partial
+from multiprocessing import Pool, cpu_count, Queue, Manager
 from typing import Dict, Optional, Union, List
 
 from tqdm.auto import tqdm
@@ -68,20 +70,42 @@ def configure_arg_parser() -> ArgumentParser:
     return arg_parser
 
 
-def extract_graphs(example: Example) -> Optional[Dict]:
+@dataclass
+class QueueMessage:
+    graph: Optional[Dict] = None
+    error: Optional[str] = None
+    is_finished: bool = False
+
+
+def handle_queue_message(queue: Queue, output_file: str):
+    with gzip.open(output_file, "wb", compresslevel=1) as gzip_file:
+        while True:  # Should be ok since function implemented for async usage
+            message: QueueMessage = queue.get()
+            if message.is_finished:
+                break
+            if message.graph is None:
+                logger.error(message.error)
+                continue
+            gzip_file.write((json.dumps(message.graph) + "\n").encode("utf-8"))
+
+
+def extract_graphs(example: Example, queue: Queue):
     type_lattice = TypeLatticeGenerator(TYPE_LATTICE_CONFIG)
     try:
         visitor = AstGraphGenerator(example.source_code, type_lattice)
         graph = visitor.build()
     except Exception as e:
-        # TODO: proper logging in multiprocessing
-        logging.error(f"Can't generate graph from {example.file_name}, exception: {e}")
-        return None
+        error = f"Can't generate graph from {example.file_name}, exception: {e}"
+        queue.put(QueueMessage(None, error))
+        return
+    if graph is None or len(graph["supernodes"]) == 0:
+        error = f"Graph without supernodes in {example.file_name}"
+        queue.put(QueueMessage(None, error))
+        return
 
     graph["file_name"] = example.file_name
     graph["project_name"] = example.project_name
-
-    return graph
+    queue.put(QueueMessage(graph, None))
 
 
 def process_holdout(
@@ -90,22 +114,26 @@ def process_holdout(
     holdout: str,
     dest_path: str,
 ) -> None:
-    with Pool(USE_CPU) as pool:
-        if isinstance(data, GitProjectExtractor):
-            project_graphs = pool.map(extract_graphs, data.get_examples(holdout))
-        else:
-            project_graphs = pool.map(extract_graphs, data)
-
-    graphs = [graph for graph in project_graphs if graph is not None]
-    if rng:
-        rng.shuffle(graphs)
-
     os.makedirs(dest_path, exist_ok=True)
     output_file = os.path.join(dest_path, f"graphs_{holdout}.jsonl.gz")
-    print(f"Saving graph in JSONL format to {output_file}")
-    with gzip.open(output_file, "wb") as out:
-        for graph in tqdm(graphs):
-            out.write((json.dumps(graph) + "\n").encode("utf-8"))
+
+    examples = data.get_examples(holdout) if isinstance(data, GitProjectExtractor) else data
+    if rng is not None:
+        rng.shuffle(examples)
+
+    with Manager() as m:
+        message_queue = m.Queue()  # type: ignore
+        pool = Pool(USE_CPU)
+
+        pool.apply_async(handle_queue_message, (message_queue, output_file))
+
+        process_func = partial(extract_graphs, queue=message_queue)
+        pool.map(process_func, tqdm(examples))
+
+        message_queue.put(QueueMessage(None, None, True))
+
+        pool.close()
+        pool.join()
 
 
 def preprocess(
