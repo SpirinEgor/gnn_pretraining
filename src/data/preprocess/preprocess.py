@@ -2,15 +2,19 @@ import gzip
 import os
 import json
 import logging
+import pickle
 import random
 from argparse import ArgumentParser
+from collections import Counter
 from dataclasses import dataclass
 from functools import partial
 from multiprocessing import Pool, cpu_count, Queue, Manager
 from typing import Dict, Optional, Union, List
 
+from dpu_utils.codeutils import split_identifier_into_parts
 from tqdm.auto import tqdm
 
+from src.data.preprocess.collect_vocabulary import PRINT_MOST_COMMON
 from src.data.preprocess.git_data_preparation import (
     GitProjectExtractor,
     Example,
@@ -66,6 +70,9 @@ def configure_arg_parser() -> ArgumentParser:
         default=17,
         help="Random seed for projects and examples shuffle",
     )
+    arg_parser.add_argument(
+        "--vocabulary", action="store_true", help="if passed then collect vocabulary from train holdout"
+    )
 
     return arg_parser
 
@@ -89,7 +96,7 @@ def handle_queue_message(queue: Queue, output_file: str):
             gzip_file.write((json.dumps(message.graph) + "\n").encode("utf-8"))
 
 
-def extract_graphs(example: Example, queue: Queue):
+def extract_graphs(example: Example, queue: Queue, vocabulary: bool = False) -> Optional[Counter]:
     type_lattice = TypeLatticeGenerator(TYPE_LATTICE_CONFIG)
     try:
         visitor = AstGraphGenerator(example.source_code, type_lattice)
@@ -97,15 +104,23 @@ def extract_graphs(example: Example, queue: Queue):
     except Exception as e:
         error = f"Can't generate graph from {example.file_name}, exception: {e}"
         queue.put(QueueMessage(None, error))
-        return
+        return None
     if graph is None or len(graph["supernodes"]) == 0:
         error = f"Graph without supernodes in {example.file_name}"
         queue.put(QueueMessage(None, error))
-        return
+        return None
 
     graph["file_name"] = example.file_name
     graph["project_name"] = example.project_name
     queue.put(QueueMessage(graph, None))
+    if vocabulary:
+        return Counter(
+            sum(
+                [split_identifier_into_parts(t) for t in graph["nodes"]],
+                [],
+            )
+        )
+    return None
 
 
 def process_holdout(
@@ -113,6 +128,7 @@ def process_holdout(
     rng: Optional[random.Random],
     holdout: str,
     dest_path: str,
+    vocabulary: bool = False,
 ) -> None:
     os.makedirs(dest_path, exist_ok=True)
     output_file = os.path.join(dest_path, f"graphs_{holdout}.jsonl.gz")
@@ -127,21 +143,33 @@ def process_holdout(
 
         pool.apply_async(handle_queue_message, (message_queue, output_file))
 
-        process_func = partial(extract_graphs, queue=message_queue)
-        pool.map(process_func, tqdm(examples))
+        process_func = partial(extract_graphs, queue=message_queue, vocabulary=vocabulary)
+        counters: List = pool.map(process_func, tqdm(examples))
 
         message_queue.put(QueueMessage(None, None, True))
 
         pool.close()
         pool.join()
 
+    if vocabulary:
+        assert counters is not None, "no counters collected during graphs preprocessing"
+        token_counter: Counter[str] = sum(filter(lambda c: c is not None, counters), Counter())
+        print(
+            f"Found {len(token_counter)} tokens, "
+            f"top {PRINT_MOST_COMMON} tokens: "
+            f"{' | '.join([t for t, _ in token_counter.most_common(PRINT_MOST_COMMON)])}"
+        )
+        with open(os.path.join(dest_path, "vocabulary.pkl"), "wb") as vocab_file:
+            pickle.dump(token_counter, vocab_file)
+
 
 def preprocess(
     data_path: str,
     dest_path: str,
     random_seed: int,
-    val_part: Optional[float],
-    test_part: Optional[float],
+    val_part: Optional[float] = None,
+    test_part: Optional[float] = None,
+    vocabulary: bool = False,
 ):
     rng = random.Random(random_seed)
 
@@ -173,7 +201,7 @@ def preprocess(
         )
         process_holdout(test_examples, rng, "test", dest_path)
         process_holdout(val_examples, rng, "val", dest_path)
-        process_holdout(train_examples, rng, "train", dest_path)
+        process_holdout(train_examples, rng, "train", dest_path, vocabulary)
     else:
         data_extractor = GitProjectExtractor(data_path, random_seed, val_part, test_part)
 
@@ -181,7 +209,7 @@ def preprocess(
             process_holdout(data_extractor, rng, "val", dest_path)
         if test_part:
             process_holdout(data_extractor, rng, "test", dest_path)
-        process_holdout(data_extractor, rng, "train", dest_path)
+        process_holdout(data_extractor, rng, "train", dest_path, vocabulary)
 
 
 if __name__ == "__main__":
@@ -194,4 +222,5 @@ if __name__ == "__main__":
         random_seed=args.seed,
         val_part=args.val_part,
         test_part=args.test_part,
+        vocabulary=args.vocabulary,
     )
