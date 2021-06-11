@@ -24,6 +24,7 @@ _DEFAULT_STATS_BOUNDARIES = {
     "Kotlin": {"max_line_len": (25, 158), "content_len": (69, 20402)},
 }
 _BAD_TEXT_REGEX = re.compile(r"auto[- ]?generated file", flags=re.IGNORECASE)
+_BUCKET_SIZE = 1_000_000
 
 
 class GitProjectExtractor:
@@ -92,6 +93,8 @@ class GitProjectExtractor:
             with open(path, "rt", encoding="utf-8", errors="ignore") as f:
                 return f.read()
 
+        bucket_to_shuffle: List[Example] = []
+
         assert self._processed_projects is not None
         for project in tqdm(
             self._processed_projects[holdout],
@@ -101,11 +104,17 @@ class GitProjectExtractor:
                 Example(language, proj_name, filename, read_file(path))
                 for language, proj_name, filename, path in project
             )
-            yield from (
+            bucket_to_shuffle.extend(
                 example
                 for example in examples
                 if GitProjectExtractor._is_good_example(example.language, example.file_name, example.source_code)
             )
+            if len(bucket_to_shuffle) > _BUCKET_SIZE:
+                self._rng.shuffle(bucket_to_shuffle)
+                yield from bucket_to_shuffle
+                bucket_to_shuffle = []
+
+        yield from bucket_to_shuffle
 
     @staticmethod
     def _is_good_example(language: str, filename: str, source_code: str) -> bool:

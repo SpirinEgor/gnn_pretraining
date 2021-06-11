@@ -125,17 +125,14 @@ def extract_graphs(example: Example, queue: Queue, vocabulary: bool = False) -> 
 
 def process_holdout(
     data: Union[GitProjectExtractor, List[Example]],
-    rng: Optional[random.Random],
     holdout: str,
     dest_path: str,
-    vocabulary: bool = False,
+    need_vocabulary: bool = False,
 ) -> None:
     os.makedirs(dest_path, exist_ok=True)
     output_file = os.path.join(dest_path, f"graphs_{holdout}.jsonl.gz")
 
     examples = data.get_examples(holdout) if isinstance(data, GitProjectExtractor) else data
-    if rng is not None:
-        rng.shuffle(examples)
 
     with Manager() as m:
         message_queue = m.Queue()  # type: ignore
@@ -143,15 +140,15 @@ def process_holdout(
 
         pool.apply_async(handle_queue_message, (message_queue, output_file))
 
-        process_func = partial(extract_graphs, queue=message_queue, vocabulary=vocabulary)
-        counters: List = pool.map(process_func, tqdm(examples))
+        process_func = partial(extract_graphs, queue=message_queue, vocabulary=need_vocabulary)
+        counters: List = pool.map(process_func, tqdm(examples, desc=f"Processing graphs from {holdout}"))
 
         message_queue.put(QueueMessage(None, None, True))
 
         pool.close()
         pool.join()
 
-    if vocabulary:
+    if need_vocabulary:
         assert counters is not None, "no counters collected during graphs preprocessing"
         token_counter: Counter[str] = sum(filter(lambda c: c is not None, counters), Counter())
         print(
@@ -169,9 +166,8 @@ def preprocess(
     random_seed: int,
     val_part: Optional[float] = None,
     test_part: Optional[float] = None,
-    vocabulary: bool = False,
+    need_vocabulary: bool = False,
 ):
-    rng = random.Random(random_seed)
 
     if os.path.isfile(data_path):
         # Dev case
@@ -186,6 +182,8 @@ def preprocess(
                     language="Python", project_name=DEFAULT_PROJECT_NAME, file_name=file_name, source_code=source_code
                 )
             )
+        rng = random.Random(random_seed)
+        rng.shuffle(examples)
 
         if test_part is None:
             test_part = 0.0
@@ -199,17 +197,17 @@ def preprocess(
             examples[test_size : test_size + val_size],
             examples[test_size + val_size :],
         )
-        process_holdout(test_examples, rng, "test", dest_path)
-        process_holdout(val_examples, rng, "val", dest_path)
-        process_holdout(train_examples, rng, "train", dest_path, vocabulary)
+        process_holdout(test_examples, "test", dest_path)
+        process_holdout(val_examples, "val", dest_path)
+        process_holdout(train_examples, "train", dest_path, need_vocabulary)
     else:
         data_extractor = GitProjectExtractor(data_path, random_seed, val_part, test_part)
 
         if val_part:
-            process_holdout(data_extractor, rng, "val", dest_path)
+            process_holdout(data_extractor, "val", dest_path)
         if test_part:
-            process_holdout(data_extractor, rng, "test", dest_path)
-        process_holdout(data_extractor, rng, "train", dest_path, vocabulary)
+            process_holdout(data_extractor, "test", dest_path)
+        process_holdout(data_extractor, "train", dest_path, need_vocabulary)
 
 
 if __name__ == "__main__":
@@ -222,5 +220,5 @@ if __name__ == "__main__":
         random_seed=args.seed,
         val_part=args.val_part,
         test_part=args.test_part,
-        vocabulary=args.vocabulary,
+        need_vocabulary=args.vocabulary,
     )
