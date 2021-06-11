@@ -9,7 +9,7 @@ from pytorch_lightning.loggers import WandbLogger
 
 from src.data.datamodule import GraphDataModule
 from src.data.vocabulary import Vocabulary
-from src.models.GINEConvMaskingPretraining import GINEConvMaskingPretraining
+from src.models.gine_conv_masking_pretraining import GINEConvMaskingPretraining
 from src.utils import filter_warnings
 
 
