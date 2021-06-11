@@ -1,3 +1,4 @@
+import gzip
 import json
 import pickle
 from argparse import ArgumentParser
@@ -17,16 +18,16 @@ def configure_arg_parser() -> ArgumentParser:
         "-d",
         "--data",
         required=True,
-        help="Path to data corpus in JSONL format",
+        help="Path to data corpus in jsonl.gz format",
     )
     return arg_parser
 
 
 def collect_vocabulary(data_path: str):
     token_counter: Counter[str] = Counter()
-    with open(data_path, "r") as data_file:
+    with gzip.open(data_path, "rb") as data_file:
         for line in tqdm(data_file):
-            raw_graph = json.loads(line)
+            raw_graph = json.loads(line.decode("utf-8"))
             token_counter.update(
                 sum(
                     [split_identifier_into_parts(t) for t in raw_graph["nodes"]],

@@ -128,7 +128,6 @@ def preprocess(
         with open(data_path, encoding="utf-8", errors="ignore") as f:
             text = f.read()
         text_examples = [example for example in text.split(DELIMITER_EXAMPLE) if example]
-
         examples = []
         for text_example in text_examples:
             file_name, source_code = map(str.strip, text_example.split(DELIMITER_FILENAME))
@@ -138,7 +137,21 @@ def preprocess(
                 )
             )
 
-        process_holdout(examples, rng, "dev", dest_path)
+        if test_part is None:
+            test_part = 0.0
+        if val_part is None:
+            val_part = 0.0
+        test_size = int(len(examples) * test_part)
+        val_size = int(len(examples) * val_part)
+
+        test_examples, val_examples, train_examples = (
+            examples[:test_size],
+            examples[test_size : test_size + val_size],
+            examples[test_size + val_size :],
+        )
+        process_holdout(test_examples, rng, "test", dest_path)
+        process_holdout(val_examples, rng, "val", dest_path)
+        process_holdout(train_examples, rng, "train", dest_path)
     else:
         data_extractor = GitProjectExtractor(data_path, random_seed, val_part, test_part)
 
