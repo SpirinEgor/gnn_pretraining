@@ -168,7 +168,10 @@ def process_holdout(
 
     if need_vocabulary:
         assert counters is not None, "no counters collected during graphs preprocessing"
-        token_counter: Counter[str] = sum(filter(lambda c: c is not None, counters), Counter())
+        token_counter = Counter()
+        for c in counters:
+            if c is not None:
+                token_counter.update(c)
         print(
             f"Found {len(token_counter)} tokens, "
             f"top {PRINT_MOST_COMMON} tokens: "
