@@ -14,7 +14,6 @@ from typing import Dict, Optional, Union, List
 from dpu_utils.codeutils import split_identifier_into_parts
 from tqdm.auto import tqdm
 
-from src.data.preprocess.collect_vocabulary import PRINT_MOST_COMMON
 from src.data.preprocess.git_data_preparation import (
     GitProjectExtractor,
     Example,
@@ -30,6 +29,8 @@ DEFAULT_PROJECT_NAME = "DEFAULT_PROJECT"
 TYPE_LATTICE_CONFIG = os.path.join(os.getcwd(), os.path.dirname(__file__), "typilus/type_lattice_config.json")
 
 USE_CPU = cpu_count()
+
+PRINT_MOST_COMMON = 10
 
 LOG_FILENAME = "log.txt"
 logging.basicConfig(filename=LOG_FILENAME, level=logging.DEBUG, filemode="w")
@@ -84,7 +85,8 @@ class QueueMessage:
     is_finished: bool = False
 
 
-def handle_queue_message(queue: Queue, output_file: str):
+def handle_queue_message(queue: Queue, output_file: str) -> int:
+    graphs_counter = 0
     with gzip.open(output_file, "wb", compresslevel=1) as gzip_file:
         while True:  # Should be ok since function implemented for async usage
             message: QueueMessage = queue.get()
@@ -94,6 +96,8 @@ def handle_queue_message(queue: Queue, output_file: str):
                 logger.error(message.error)
                 continue
             gzip_file.write((json.dumps(message.graph) + "\n").encode("utf-8"))
+            graphs_counter += 1
+    return graphs_counter
 
 
 def extract_graph(example: Example) -> Dict:
@@ -144,17 +148,23 @@ def process_holdout(
         message_queue = m.Queue()  # type: ignore
         pool = Pool(USE_CPU)
 
-        pool.apply_async(handle_queue_message, (message_queue, output_file))
+        graphs_counter = pool.apply_async(handle_queue_message, (message_queue, output_file))
 
         process_func = partial(extract_graph_parallel, queue=message_queue, vocabulary=need_vocabulary)
-        counters: List = pool.map(
-            process_func, tqdm(examples, desc=f"Processing graphs from {holdout}...", total=examples_length)
-        )
+        counters: List = [
+            res
+            for res in tqdm(
+                pool.imap_unordered(process_func, examples),
+                desc=f"Processing graphs from {holdout}...",
+                total=examples_length,
+            )
+        ]
 
         message_queue.put(QueueMessage(None, None, True))
 
         pool.close()
         pool.join()
+        print(f"Extracted {graphs_counter.get()} graphs")
 
     if need_vocabulary:
         assert counters is not None, "no counters collected during graphs preprocessing"
