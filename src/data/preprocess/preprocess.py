@@ -96,11 +96,18 @@ def handle_queue_message(queue: Queue, output_file: str):
             gzip_file.write((json.dumps(message.graph) + "\n").encode("utf-8"))
 
 
-def extract_graphs(example: Example, queue: Queue, vocabulary: bool = False) -> Optional[Counter]:
+def extract_graph(example: Example) -> Dict:
     type_lattice = TypeLatticeGenerator(TYPE_LATTICE_CONFIG)
+    visitor = AstGraphGenerator(example.source_code, type_lattice)
+    graph = visitor.build()
+    graph["file_name"] = example.file_name
+    graph["project_name"] = example.project_name
+    return graph
+
+
+def extract_graph_parallel(example: Example, queue: Queue, vocabulary: bool = False) -> Optional[Counter]:
     try:
-        visitor = AstGraphGenerator(example.source_code, type_lattice)
-        graph = visitor.build()
+        graph = extract_graph(example)
     except Exception as e:
         error = f"Can't generate graph from {example.file_name}, exception: {e}"
         queue.put(QueueMessage(None, error))
@@ -110,8 +117,6 @@ def extract_graphs(example: Example, queue: Queue, vocabulary: bool = False) -> 
         queue.put(QueueMessage(None, error))
         return None
 
-    graph["file_name"] = example.file_name
-    graph["project_name"] = example.project_name
     queue.put(QueueMessage(graph, None))
     if vocabulary:
         return Counter(
@@ -140,7 +145,7 @@ def process_holdout(
 
         pool.apply_async(handle_queue_message, (message_queue, output_file))
 
-        process_func = partial(extract_graphs, queue=message_queue, vocabulary=need_vocabulary)
+        process_func = partial(extract_graph_parallel, queue=message_queue, vocabulary=need_vocabulary)
         counters: List = pool.map(process_func, tqdm(examples, desc=f"Processing graphs from {holdout}"))
 
         message_queue.put(QueueMessage(None, None, True))

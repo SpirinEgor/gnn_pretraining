@@ -92,7 +92,7 @@ class Graph:
             edge_type = EdgeType[type_name]
             for root, children in type_edges.items():
                 for child in children:
-                    edges.append(Edge(edge_id, nodes[root], nodes[child], edge_type))
+                    edges.append(Edge(edge_id, nodes[int(root)], nodes[int(child)], edge_type))
                     edge_id += 1
         return Graph(nodes, edges)
 
@@ -117,7 +117,8 @@ class Graph:
             token[i, : len(subtoken_ids)] = torch.tensor(subtoken_ids)
 
         node_type = torch.tensor([n.type.value for n in self.__nodes], dtype=torch.long)
-        edge_index = torch.tensor(zip(*[[e.from_node.id, e.to_node.id] for e in self.__edges]), dtype=torch.long)
+        edge_index = torch.tensor(list(zip(*[[e.from_node.id, e.to_node.id] for e in self.__edges])), dtype=torch.long)
         edge_type = torch.tensor([e.type.value for e in self.__edges], dtype=torch.long)
 
-        return Data(token=token, node_type=node_type, edge_index=edge_index, edge_type=edge_type)
+        # save token to `x` so Data can calculate properties like `num_nodes`
+        return Data(x=token, node_type=node_type, edge_index=edge_index, edge_type=edge_type)
