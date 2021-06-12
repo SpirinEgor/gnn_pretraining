@@ -1,4 +1,4 @@
-#!bin/bash
+#!/bin/bash
 
 # 1. torch-geometric has dependency to torch-scatter without mentioning it in setup.py :(
 # 2. torch-scatter's setup.py import torch, so it have to be installed already :(
