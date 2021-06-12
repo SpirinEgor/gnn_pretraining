@@ -1,4 +1,4 @@
-# GNN Pre-training & fine-tuning
+# GNN pre-training & fine-tuning
 Pre-training and fine-tuning GNN model on source code 
 
 For correct usage install all requirements from [requirements.txt](requirements.txt).
