@@ -1,9 +1,11 @@
 # GNN Pre-training & fine-tuning
 Pre-training and fine-tuning GNN model on source code 
 
-For correct usage install all requirements:
+For correct usage install all requirements from [requirements.txt](requirements.txt).
+Due to issues with installing order, it's recommended to use prepared shell script.
+More information about issues inside it too.
 ```shell
-pip install -r requirements.txt
+./install_dependencies.sh
 ```
 
 ## Data preparation
