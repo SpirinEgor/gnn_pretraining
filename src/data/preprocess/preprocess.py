@@ -168,7 +168,7 @@ def process_holdout(
 
     if need_vocabulary:
         assert counters is not None, "no counters collected during graphs preprocessing"
-        token_counter = Counter()
+        token_counter: Counter[str] = Counter()
         for c in counters:
             if c is not None:
                 token_counter.update(c)
