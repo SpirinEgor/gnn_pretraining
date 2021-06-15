@@ -23,9 +23,9 @@ More information about issues inside it too.
 All source and preprocessed data can be obtained from this table:
 | name  	| source                                                                                                                  	| preprocessed                                                                                                               	| holdout sizes (train/val/test) 	| # tokens 	|
 |-------	|-------------------------------------------------------------------------------------------------------------------------	|----------------------------------------------------------------------------------------------------------------------------	|--------------------------------	|----------	|
-| dev   	| [s3 link](https://s3.eu-west-1.amazonaws.com/datasets.ml.labs.aws.intellij.net/gnn_pretraining/dev/dev.txt) (3.6Mb)     	| [s3 link](https://s3.eu-west-1.amazonaws.com/datasets.ml.labs.aws.intellij.net/gnn_pretraining/dev/dev.tar.gz) (15Mb)      	| 552/185/192                    	| 12269    	|
-| small 	| [s3 link](https://s3.eu-west-1.amazonaws.com/datasets.ml.labs.aws.intellij.net/gnn_pretraining/small/small.txt) (287Mb) 	| [s3 link](https://s3.eu-west-1.amazonaws.com/datasets.ml.labs.aws.intellij.net/gnn_pretraining/small/small.tar.gz) (1.2Gb) 	| 44683/14892/14934              	| 213875   	|
-
+| dev   	| [s3 link](https://s3.eu-west-1.amazonaws.com/datasets.ml.labs.aws.intellij.net/gnn_pretraining/dev/dev.txt) (3.6Mb)     	| [s3 link](https://s3.eu-west-1.amazonaws.com/datasets.ml.labs.aws.intellij.net/gnn_pretraining/dev/dev.tar.gz) (15Mb)      	| 552 / 185 / 192                    	| 12 269    	|
+| small 	| [s3 link](https://s3.eu-west-1.amazonaws.com/datasets.ml.labs.aws.intellij.net/gnn_pretraining/small/small.txt) (287Mb) 	| [s3 link](https://s3.eu-west-1.amazonaws.com/datasets.ml.labs.aws.intellij.net/gnn_pretraining/small/small.tar.gz) (1.2Gb) 	| 44 683 / 14 892 / 14 934              	| 213 875   	|
+| full  	| Unavailable   | Unavailable   | 56 666 194 / 19 892 270 / 18 464 490              	| 1 306 153   |
 
 ### Code2graph
 
