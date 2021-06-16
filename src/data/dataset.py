@@ -28,12 +28,15 @@ class GraphDataset(IterableDataset):
 
     def __iter__(self) -> Iterator[Data]:
         worker_info = get_worker_info()
-        if worker_info is not None:
-            raise RuntimeError("Graph dataset does not support multiple workers")
+        n_workers = 1 if worker_info is None else worker_info.num_workers
+        take_each_point = 0 if worker_info is None else worker_info.id
         with gzip.open(self.__graph_filepath, "rb") as input_file:
-            for line in input_file:
+            for i, line in enumerate(input_file):
+                if i % n_workers != take_each_point:
+                    continue
                 raw_graph = json.loads(line.decode("utf-8"))
                 graph = Graph.from_dict(raw_graph).to_torch(self.__vocabulary, self.__config.max_token_parts)
+                graph["id"] = i
                 if self.__config.task.name == "masking":
                     self._mask_graph_task(graph)
                 else:
