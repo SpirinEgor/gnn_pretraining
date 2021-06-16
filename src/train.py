@@ -38,7 +38,7 @@ def train(config_path: str):
     # Define logger
     model_name = model.__class__.__name__
     dataset_name = basename(config.data_folder)
-    wandb_logger = WandbLogger(f"{model_name} -- {dataset_name}", offline=config.offline)
+    wandb_logger = WandbLogger(project=f"{model_name} -- {dataset_name}", offline=config.offline)
 
     # Define callbacks
     checkpoint_callback = ModelCheckpoint(
