@@ -1,6 +1,7 @@
 import gzip
 import json
-from typing import Iterator
+from os.path import dirname, basename
+from typing import Iterator, Optional
 
 import torch
 from omegaconf import DictConfig
@@ -12,6 +13,13 @@ from src.data.vocabulary import Vocabulary
 
 
 class GraphDataset(IterableDataset):
+
+    __known_dataset_stats = {
+        "dev": {"train": 552, "val": 185, "test": 192},
+        "small": {"train": 44_683, "val": 14_892, "test": 14_934},
+        "full": {"train": 56_666_194, "val": 19_892_270, "test": 18_464_490},
+    }
+
     def __init__(self, graph_filepath: str, vocabulary: Vocabulary, config: DictConfig):
         super().__init__()
         self.__graph_filepath = graph_filepath
@@ -31,6 +39,13 @@ class GraphDataset(IterableDataset):
                 else:
                     raise ValueError(f"Unknown task for graph learning: {self.__config.task.name}")
                 yield graph
+
+    def __len__(self) -> Optional[int]:
+        dataset_name = basename(dirname(self.__graph_filepath))
+        if dataset_name in self.__known_dataset_stats:
+            holdout_name = basename(self.__graph_filepath).split(".", 1)[0].rsplit("_", 1)[1]
+            return self.__known_dataset_stats[dataset_name][holdout_name]
+        return None
 
     @staticmethod
     def _mask_type(graph: Data, attr_name: str, p: float, mask_value: int):
