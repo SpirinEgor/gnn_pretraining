@@ -6,7 +6,7 @@ from pytorch_lightning import LightningModule
 from pytorch_lightning.utilities.types import EPOCH_OUTPUT
 from torch import nn
 from torch_geometric.data import Data, Batch
-from torchmetrics import F1
+from torchmetrics import F1, MetricCollection
 
 from src.data.graph import NodeType, EdgeType
 from src.models.modules.gine_conv_encoder import GINEConvEncoder
@@ -23,10 +23,11 @@ class GINEConvMaskingPretraining(LightningModule):
         self.__edge_type_classifier = EdgeTypeClassifier(model_config)
 
         self.__loss = nn.CrossEntropyLoss()
-        self.__metrics = {}
+        metrics = {}
         for holdout in ["train", "val", "test"]:
-            self.__metrics[f"{holdout}_node_type_f1"] = F1(len(NodeType))
-            self.__metrics[f"{holdout}_edge_type_f1"] = F1(len(EdgeType))
+            metrics[f"{holdout}_node_type_f1"] = F1(len(NodeType))
+            metrics[f"{holdout}_edge_type_f1"] = F1(len(EdgeType))
+        self.__metrics = MetricCollection(metrics)
 
     def forward(self, input_graph: Union[Data, Batch]):  # type: ignore
         return self.__encoder(input_graph)
