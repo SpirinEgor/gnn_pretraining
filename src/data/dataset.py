@@ -35,7 +35,10 @@ class GraphDataset(IterableDataset):
                 if i % n_workers != take_each_point:
                     continue
                 raw_graph = json.loads(line.decode("utf-8"))
-                graph = Graph.from_dict(raw_graph).to_torch(self.__vocabulary, self.__config.max_token_parts)
+                graph = Graph.from_dict(raw_graph)
+                if not self._validate(graph):
+                    continue
+                graph = graph.to_torch(self.__vocabulary, self.__config.max_token_parts)
                 graph["id"] = i
                 if self.__config.task.name == "masking":
                     self._mask_graph_task(graph)
@@ -60,3 +63,6 @@ class GraphDataset(IterableDataset):
     def _mask_graph_task(self, graph: Data):
         self._mask_type(graph, "node", self.__config.task.p_node, len(NodeType))
         self._mask_type(graph, "edge", self.__config.task.p_edge, len(EdgeType))
+
+    def _validate(self, graph: Graph) -> bool:
+        return len(graph.nodes) <= self.__config.max_n_nodes

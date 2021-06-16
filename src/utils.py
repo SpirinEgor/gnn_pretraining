@@ -14,14 +14,14 @@ def draw_graph(graph: Graph, height: int = 1000, width: int = 1000, notebook: bo
     :param notebook: pass True if visualization should be displayed in notebook
     :return: pyvis Network instance
     """
-    net = Network(height=height, width=width, directed=True, notebook=True)
+    net = Network(height=height, width=width, directed=True, notebook=notebook)
     net.barnes_hut(gravity=-10000, overlap=1, spring_length=1)
 
     for node in graph.nodes:
         net.add_node(node.id, label=node.token, group=node.type.value)
 
     for edge in graph.edges:
-        net.add_edge(edge.from_node.id, edge.to_node.id, label=edge.type.name)
+        net.add_edge(edge.from_node.id, edge.to_node.id, label=edge.type.name, group=edge.type.value)
 
     return net
 

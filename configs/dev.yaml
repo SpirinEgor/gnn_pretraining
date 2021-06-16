@@ -12,9 +12,11 @@ vocabulary:
   n_tokens: 8917
 
 data:
+  num_workers: 0
   batch_size: 5
   test_batch_size: 5
   max_token_parts: 5
+  max_n_nodes: 4000
   task:
     name: "masking"
     p_node: 0.5

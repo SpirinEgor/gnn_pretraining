@@ -80,9 +80,9 @@ class Graph:
         for i, token in enumerate(graph_dict["nodes"]):
             if i in graph_dict["token-sequence"]:
                 node_type = NodeType.TOKEN
-            elif i in graph_dict["edges"]["SUBTOKEN_OF"]:
+            elif "SUBTOKEN_OF" in graph_dict["edges"] and str(i) in graph_dict["edges"]["SUBTOKEN_OF"]:
                 node_type = NodeType.VOCABULARY
-            elif i in graph_dict["supernodes"]:
+            elif "OCCURRENCE_OF" in graph_dict["edges"] and str(i) in graph_dict["edges"]["OCCURRENCE_OF"]:
                 node_type = NodeType.SYMBOL
             else:
                 node_type = NodeType.NON_TERMINAL
