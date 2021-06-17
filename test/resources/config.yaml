@@ -5,7 +5,6 @@ data:
   max_token_parts: 5
   max_n_nodes: 9999999
   task:
-    name: "masking"
+    name: "type masking"
     p_node: 0.5
     p_edge: 0.5
-    p_token: 0.5
