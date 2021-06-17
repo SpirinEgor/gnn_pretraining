@@ -10,7 +10,7 @@ RESOURCES_FOLDER = "test/resources"
 VOCABULARY_FILE = join(RESOURCES_FOLDER, "vocabulary.pkl")
 GRAPHS_FILE = join(RESOURCES_FOLDER, "graphs.jsonl.gz")
 N_GRAPHS = 192
-TEST_CONFIG = OmegaConf.load(join("configs", "dev.yaml"))
+TEST_CONFIG = OmegaConf.load(join("test", "resources", "config.yaml"))
 
 
 def test_multiple_workers():
@@ -22,4 +22,4 @@ def test_multiple_workers():
     for graph in data_loader:
         ids.append(graph["id"])
     ids = torch.cat(ids).unique()
-    assert ids.shape[0] == GRAPHS_FILE
+    assert ids.shape[0] == N_GRAPHS

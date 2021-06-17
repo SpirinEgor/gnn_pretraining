@@ -26,4 +26,4 @@ jobs:
         mypy .
     - name: Run unit tests with pytest
       run: |
-        pytest test
+        PYTHONPATH=. pytest test
