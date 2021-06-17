@@ -9,7 +9,7 @@ progress_bar_refresh_rate: 1
 
 vocabulary:
   name: "vocabulary.pkl"
-  n_tokens: 8917
+  n_tokens: 1000
 
 data:
   num_workers: 0

@@ -3,13 +3,13 @@ data_folder: ../data/gnn_pretraining/small
 resume_from_checkpoint: null
 
 seed: 7
-offline: true
+offline: false
 # Training in notebooks (e.g. Google Colab) may crash with too small value
 progress_bar_refresh_rate: 1
 
 vocabulary:
   name: "vocabulary.pkl"
-  n_tokens: 136782
+  n_tokens: 3269
 
 data:
   num_workers: -1
@@ -18,14 +18,13 @@ data:
   max_token_parts: 5
   max_n_nodes: 4000
   task:
-    name: "type masking"
-    p_node: 0.5
-    p_edge: 0.5
+    name: "token prediction"
+    p: 0.5
 
 model:
   embed_dim: 128
   hidden_dim: 128
-  n_hidden_layers: 2
+  n_hidden_layers: 3
 
 optimizer:
   lr: 0.001
