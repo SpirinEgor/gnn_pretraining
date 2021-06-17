@@ -31,3 +31,16 @@ class EdgeTypeClassifier(nn.Module):
         # [n edges; n types]
         logits = self.__edge_type_linear(self.__relu(edge_features))
         return logits
+
+
+class TokensClassifier(nn.Module):
+    def __init__(self, config: DictConfig, vocabulary_size: int):
+        super().__init__()
+        self.__relu = nn.ReLU()
+        self.__tokens_linear = nn.Linear(config.hidden_dim, vocabulary_size)
+
+    def forward(self, encoded_graph: torch.Tensor) -> torch.Tensor:
+        # Last layer of encoder is linear, we add ReLU to avoid merging linear operators
+        # [n nodes; n types]
+        logits = self.__tokens_linear(self.__relu(encoded_graph))
+        return logits

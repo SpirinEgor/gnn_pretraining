@@ -21,6 +21,7 @@ data:
     name: "masking"
     p_node: 0.5
     p_edge: 0.5
+    p_token: 0.5
 
 model:
   embed_dim: 10

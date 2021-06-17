@@ -6,11 +6,11 @@ from pytorch_lightning import LightningModule
 from pytorch_lightning.utilities.types import EPOCH_OUTPUT
 from torch import nn
 from torch_geometric.data import Data, Batch
-from torchmetrics import F1, MetricCollection, Metric
+from torchmetrics import F1, MetricCollection, Metric, Accuracy
 
 from src.data.graph import NodeType, EdgeType
 from src.models.modules.gine_conv_encoder import GINEConvEncoder
-from src.models.modules.type_classifier import NodeTypeClassifier, EdgeTypeClassifier
+from src.models.modules.classifiers import NodeTypeClassifier, EdgeTypeClassifier, TokensClassifier
 
 
 class GINEConvMaskingPretraining(LightningModule):
@@ -21,13 +21,21 @@ class GINEConvMaskingPretraining(LightningModule):
         self.__encoder = GINEConvEncoder(model_config, vocabulary_size, pad_idx)
         self.__node_type_classifier = NodeTypeClassifier(model_config)
         self.__edge_type_classifier = EdgeTypeClassifier(model_config)
+        self.__tokens_classifier = TokensClassifier(model_config, vocabulary_size)
 
-        self.__loss = nn.CrossEntropyLoss()
+        self.__type_loss = nn.CrossEntropyLoss()
+        self.__tokens_loss = nn.BCEWithLogitsLoss()
         metrics: Dict[str, Metric] = {}
         for holdout in ["train", "val", "test"]:
             metrics[f"{holdout}_node_type_f1"] = F1(len(NodeType))
             metrics[f"{holdout}_edge_type_f1"] = F1(len(EdgeType))
+            metrics[f"{holdout}_tokens_f1"] = F1(vocabulary_size, ignore_index=pad_idx, mdmc_average="global")
+            metrics[f"{holdout}_tokens_acc"] = Accuracy(
+                num_classes=vocabulary_size, ignore_index=pad_idx, mdmc_average="global"
+            )
         self.__metrics = MetricCollection(metrics)
+
+        self.__pad_idx = pad_idx
 
     def forward(self, input_graph: Union[Data, Batch]):  # type: ignore
         return self.__encoder(input_graph)
@@ -52,34 +60,62 @@ class GINEConvMaskingPretraining(LightningModule):
     def _shared_step(self, batched_graph: Batch, step: str) -> Dict:
         # [n nodes; hidden dim]
         encoded_graph = self.__encoder(batched_graph)
+        # [n nodes; number node types]
         node_type_logits = self.__node_type_classifier(encoded_graph)
+        # [n nodes; number edge types]
         edge_type_logits = self.__edge_type_classifier(encoded_graph, batched_graph.edge_index)
+        # [n nodes; vocabulary size]
+        tokens_logits = self.__tokens_classifier(encoded_graph)
 
         # [n nodes]
-        node_mask = batched_graph["node_mask"]
-        # int
-        node_type_loss = self.__loss(node_type_logits[node_mask], batched_graph["node_target"][node_mask])
+        node_mask = batched_graph["node_type_mask"]
+        # float
+        node_type_loss = self.__type_loss(node_type_logits[node_mask], batched_graph["node_type_target"][node_mask])
 
         # [n edges]
-        edge_mask = batched_graph["edge_mask"]
-        # int
-        edge_type_loss = self.__loss(edge_type_logits[edge_mask], batched_graph["edge_target"][edge_mask])
+        edge_mask = batched_graph["edge_type_mask"]
+        # float
+        edge_type_loss = self.__type_loss(edge_type_logits[edge_mask], batched_graph["edge_type_target"][edge_mask])
+
+        # [n nodes]
+        tokens_mask = batched_graph["x_mask"]
+        # [n nodes; max tokens splits]
+        tokens_labels = batched_graph["x_target"]
+        # [n nodes; vocabulary size]
+        target_one_hot = torch.zeros_like(tokens_logits)
+        target_one_hot.scatter_(1, tokens_labels, 1)
+        target_one_hot[:, self.__pad_idx] = 0  # Deleting PADs from labels
+        # float
+        tokens_loss = self.__tokens_loss(tokens_logits[tokens_mask], target_one_hot[tokens_mask])
 
         # TODO: we can use weighted sum here
-        loss = node_type_loss + edge_type_loss
+        loss = node_type_loss + edge_type_loss + tokens_loss
 
         with torch.no_grad():
             # [n nodes]
             node_type_pred = torch.argmax(node_type_logits, dim=-1)
-            node_type_f1_score = self.__metrics[f"{step}_node_type_f1"](node_type_pred, batched_graph["node_target"])
+            node_type_f1_score = self.__metrics[f"{step}_node_type_f1"](
+                node_type_pred[node_mask], batched_graph["node_type_target"][node_mask]
+            )
             # [n edges]
             edge_type_pred = torch.argmax(edge_type_logits, dim=-1)
-            edge_type_f1_score = self.__metrics[f"{step}_edge_type_f1"](edge_type_pred, batched_graph["edge_target"])
+            edge_type_f1_score = self.__metrics[f"{step}_edge_type_f1"](
+                edge_type_pred[edge_mask], batched_graph["edge_type_target"][edge_mask]
+            )
+
+            # [n nodes; max tokens splits]
+            _, tokens_pred = torch.topk(tokens_logits, k=tokens_labels.size(1), dim=-1, sorted=False)
+            tokens_f1_score = self.__metrics[f"{step}_tokens_f1"](tokens_pred[tokens_mask], tokens_labels[tokens_mask])
+            tokens_acc_score = self.__metrics[f"{step}_tokens_acc"](
+                tokens_pred[tokens_mask], tokens_labels[tokens_mask]
+            )
 
         return {
             f"{step}/loss": loss,
             f"{step}/f1-node type": node_type_f1_score,
             f"{step}/f1-edge type": edge_type_f1_score,
+            f"{step}/f1-tokens": tokens_f1_score,
+            f"{step}/acc-tokens": tokens_acc_score,
         }
 
     def training_step(self, batched_graph: Batch, batch_idx: int) -> torch.Tensor:  # type: ignore
@@ -88,6 +124,8 @@ class GINEConvMaskingPretraining(LightningModule):
         self.log_dict(result, on_step=True, on_epoch=False)
         self.log("f1-node type", result["train/f1-node type"], prog_bar=True, logger=False)
         self.log("f1-edge type", result["train/f1-edge type"], prog_bar=True, logger=False)
+        self.log("f1-tokens", result["train/f1-tokens"], prog_bar=True, logger=False)
+        self.log("acc-tokens", result["train/acc-tokens"], prog_bar=True, logger=False)
         return loss
 
     def validation_step(self, batched_graph: Batch, batch_idx: int) -> torch.Tensor:  # type: ignore
@@ -106,10 +144,14 @@ class GINEConvMaskingPretraining(LightningModule):
             mean_loss = torch.stack(losses).mean()
         total_node_type_f1 = self.__metrics[f"{step}_node_type_f1"].compute()
         total_edge_type_f1 = self.__metrics[f"{step}_edge_type_f1"].compute()
+        total_tokens_f1 = self.__metrics[f"{step}_tokens_f1"].compute()
+        total_tokens_acc = self.__metrics[f"{step}_tokens_acc"].compute()
         log = {
             f"{step}_loss": mean_loss,
             f"{step}_node_type_f1": total_node_type_f1,
             f"{step}_edge_type_f1": total_edge_type_f1,
+            f"{step}_tokens_f1": total_tokens_f1,
+            f"{step}_tokens_acc": total_tokens_acc,
         }
         self.log_dict(log, on_step=False, on_epoch=True)
 

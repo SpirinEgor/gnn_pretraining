@@ -17,7 +17,7 @@ class GraphDataModule(LightningDataModule):
         self.__vocabulary = vocabulary
         self.__config = config
         self.__data_folder = data_folder
-        self.__n_workers = cpu_count() if self.__config.n_workers == -1 else self.__config.n_workers
+        self.__n_workers = cpu_count() if self.__config.num_workers == -1 else self.__config.num_workers
 
     def train_dataloader(self) -> DataLoader:
         train_dataset_path = join(self.__data_folder, "graphs_train.jsonl.gz")

@@ -1,7 +1,7 @@
 import gzip
 import json
 from os.path import dirname, basename
-from typing import Iterator, Optional
+from typing import Iterator, Optional, Union
 
 import torch
 from omegaconf import DictConfig
@@ -54,15 +54,19 @@ class GraphDataset(IterableDataset):
         return None
 
     @staticmethod
-    def _mask_type(graph: Data, attr_name: str, p: float, mask_value: int):
-        target, mask, attr_type = f"{attr_name}_target", f"{attr_name}_mask", f"{attr_name}_type"
-        graph[target] = graph[attr_type].clone().detach()
+    def _mask_type(graph: Data, attr_name: str, p: float, mask_value: Union[int, torch.Tensor]):
+        target, mask = f"{attr_name}_target", f"{attr_name}_mask"
+        graph[target] = graph[attr_name].clone().detach()
         graph[mask] = torch.rand(graph[target].shape[0]) < p
-        graph[attr_type][graph[mask]] = mask_value
+        graph[attr_name][graph[mask]] = mask_value
 
     def _mask_graph_task(self, graph: Data):
-        self._mask_type(graph, "node", self.__config.task.p_node, len(NodeType))
-        self._mask_type(graph, "edge", self.__config.task.p_edge, len(EdgeType))
+        self._mask_type(graph, "node_type", self.__config.task.p_node, len(NodeType))
+        self._mask_type(graph, "edge_type", self.__config.task.p_edge, len(EdgeType))
+
+        x_mask_value = torch.zeros(self.__config.max_token_parts, dtype=torch.long)
+        x_mask_value[0] = self.__vocabulary.mask[1]
+        self._mask_type(graph, "x", self.__config.task.p_token, x_mask_value)
 
     def _validate(self, graph: Graph) -> bool:
         return len(graph.nodes) <= self.__config.max_n_nodes
