@@ -1,0 +1,40 @@
+data_folder: ../data/gnn_pretraining/small
+
+resume_from_checkpoint: null
+
+seed: 7
+offline: true
+# Training in notebooks (e.g. Google Colab) may crash with too small value
+progress_bar_refresh_rate: 1
+
+vocabulary:
+  name: "vocabulary.pkl"
+  n_tokens: 136782
+
+data:
+  num_workers: -1
+  batch_size: 256
+  test_batch_size: 384
+  max_token_parts: 5
+  max_n_nodes: 4000
+  task:
+    name: "token prediction"
+    p: 0.5
+
+model:
+  embed_dim: 128
+  hidden_dim: 128
+  n_hidden_layers: 2
+
+optimizer:
+  lr: 0.001
+  weight_decay: 0
+  decay_gamma: 0.75
+
+train:
+  n_epochs: 300
+  patience: 10
+  clip_norm: 10
+  val_every_epoch: 1
+  save_every_epoch: 1
+  log_every_n_steps: 50
