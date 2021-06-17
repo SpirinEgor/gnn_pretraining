@@ -19,7 +19,7 @@ data:
   max_n_nodes: 4000
   task:
     name: "token prediction"
-    p_token: 0.5
+    p: 0.5
 
 model:
   embed_dim: 10

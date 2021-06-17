@@ -69,7 +69,7 @@ class GraphDataset(IterableDataset):
     def _token_prediction_task(self, graph: Data):
         x_mask_value = torch.full((self.__config.max_token_parts,), self.__vocabulary.pad[1], dtype=torch.long)
         x_mask_value[0] = self.__vocabulary.mask[1]
-        self._mask_property(graph, "x", self.__config.task.p_token, x_mask_value)
+        self._mask_property(graph, "x", self.__config.task.p, x_mask_value)
         ohe_target = torch.zeros(graph.num_nodes, len(self.__vocabulary))
         ohe_target[torch.arange(graph.num_nodes).reshape(-1, 1), graph["x_target"]] = 1
         ohe_target[:, self.__vocabulary.pad[1]] = 0
