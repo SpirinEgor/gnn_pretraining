@@ -9,7 +9,8 @@ from pytorch_lightning.loggers import WandbLogger
 
 from src.data.datamodule import GraphDataModule
 from src.data.vocabulary import Vocabulary
-from src.models.gine_conv_masking_pretraining import GINEConvMaskingPretraining
+from src.models.gine_conv_token_prediction import GINEConvTokenPrediction
+from src.models.gine_conv_type_masking import GINEConvTypeMasking
 from src.utils import filter_warnings
 
 
@@ -33,7 +34,14 @@ def train(config_path: str):
     data_module = GraphDataModule(config.data_folder, vocabulary, config.data)
 
     # Init model
-    model = GINEConvMaskingPretraining(config.model, len(vocabulary), vocabulary.pad[1], config.optimizer)
+    task_name = config.data.task.name
+    if task_name == "type masking":
+        model = GINEConvTypeMasking(config.model, len(vocabulary), vocabulary.pad[1], config.optimizer)
+    elif task_name == "token prediction":
+        model = GINEConvTokenPrediction(config.model, len(vocabulary), vocabulary.pad[1], config.optimizer)
+    else:
+        print(f"Unknown pretraining task: {task_name}")
+        return
 
     # Define logger
     model_name = model.__class__.__name__

@@ -40,8 +40,10 @@ class GraphDataset(IterableDataset):
                     continue
                 graph = graph.to_torch(self.__vocabulary, self.__config.max_token_parts)
                 graph["id"] = i
-                if self.__config.task.name == "masking":
-                    self._mask_graph_task(graph)
+                if self.__config.task.name == "type masking":
+                    self._type_masking_task(graph)
+                elif self.__config.task.name == "token prediction":
+                    self._token_prediction_task(graph)
                 else:
                     raise ValueError(f"Unknown task for graph learning: {self.__config.task.name}")
                 yield graph
@@ -54,19 +56,24 @@ class GraphDataset(IterableDataset):
         return None
 
     @staticmethod
-    def _mask_type(graph: Data, attr_name: str, p: float, mask_value: Union[int, torch.Tensor]):
+    def _mask_property(graph: Data, attr_name: str, p: float, mask_value: Union[int, torch.Tensor]):
         target, mask = f"{attr_name}_target", f"{attr_name}_mask"
         graph[target] = graph[attr_name].clone().detach()
         graph[mask] = torch.rand(graph[target].shape[0]) < p
         graph[attr_name][graph[mask]] = mask_value
 
-    def _mask_graph_task(self, graph: Data):
-        self._mask_type(graph, "node_type", self.__config.task.p_node, len(NodeType))
-        self._mask_type(graph, "edge_type", self.__config.task.p_edge, len(EdgeType))
+    def _type_masking_task(self, graph: Data):
+        self._mask_property(graph, "node_type", self.__config.task.p_node, len(NodeType))
+        self._mask_property(graph, "edge_type", self.__config.task.p_edge, len(EdgeType))
 
-        x_mask_value = torch.zeros(self.__config.max_token_parts, dtype=torch.long)
+    def _token_prediction_task(self, graph: Data):
+        x_mask_value = torch.full((self.__config.max_token_parts,), self.__vocabulary.pad[1], dtype=torch.long)
         x_mask_value[0] = self.__vocabulary.mask[1]
-        self._mask_type(graph, "x", self.__config.task.p_token, x_mask_value)
+        self._mask_property(graph, "x", self.__config.task.p_token, x_mask_value)
+        ohe_target = torch.zeros(graph.num_nodes, len(self.__vocabulary))
+        ohe_target[torch.arange(graph.num_nodes).reshape(-1, 1), graph["x_target"]] = 1
+        ohe_target[:, self.__vocabulary.pad[1]] = 0
+        graph["x_ohe_target"] = ohe_target
 
     def _validate(self, graph: Graph) -> bool:
         return len(graph.nodes) <= self.__config.max_n_nodes

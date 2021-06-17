@@ -51,7 +51,7 @@ We use [PyTorch Lightning](https://www.pytorchlightning.ai) to implement all nec
 ```shell
 PYTHONPATH="." python src/train.py -c <path to YAML config file> 
 ```
-[src.models.modules.gine_conv_encoder](./src/models/modules/gine_conv_encoder.py) contains descibed encoder model and [src.models.gine_conv_masking_pretraining](./src/models/gine_conv_masking_pretraining.py) contains complete Lightning module with pretraining description.
+[src.models.modules.gine_conv_encoder](./src/models/modules/gine_conv_encoder.py) contains descibed encoder model and [src.models.gine_conv_masking_pretraining](src/models/gine_conv_type_masking.py) contains complete Lightning module with pretraining description.
 
 ### Configuration
 

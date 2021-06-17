@@ -41,6 +41,6 @@ class TokensClassifier(nn.Module):
 
     def forward(self, encoded_graph: torch.Tensor) -> torch.Tensor:
         # Last layer of encoder is linear, we add ReLU to avoid merging linear operators
-        # [n nodes; n types]
+        # [n nodes; vocabulary size]
         logits = self.__tokens_linear(self.__relu(encoded_graph))
         return logits

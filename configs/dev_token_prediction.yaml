@@ -18,9 +18,7 @@ data:
   max_token_parts: 5
   max_n_nodes: 4000
   task:
-    name: "masking"
-    p_node: 0.5
-    p_edge: 0.5
+    name: "token prediction"
     p_token: 0.5
 
 model:
