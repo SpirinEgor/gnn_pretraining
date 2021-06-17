@@ -18,7 +18,7 @@ class GINEConvTokenPrediction(GINEConvPretraining):
         super().__init__(model_config, vocabulary_size, pad_idx, optim_config)
         self.__tokens_classifier = TokensClassifier(model_config, vocabulary_size)
 
-        self.__loss = nn.BCEWithLogitsLoss()
+        self.__loss = nn.CrossEntropyLoss(ignore_index=pad_idx)
         metrics: Dict[str, Metric] = {
             f"{holdout}_f1": SequentialF1Score(False, ignore_idx=[pad_idx]) for holdout in ["train", "val", "test"]
         }
@@ -32,19 +32,24 @@ class GINEConvTokenPrediction(GINEConvPretraining):
         return super()._get_parameters() + [self.__tokens_classifier.parameters()]
 
     def _shared_step(self, batched_graph: Batch, step: str) -> Dict:
-        # [n nodes; hidden dim]
-        encoded_graph = self._encoder(batched_graph)
-        # [n nodes; vocabulary size]
-        tokens_logits = self.__tokens_classifier(encoded_graph)
-
         # [n nodes]
         tokens_mask = batched_graph["x_mask"]
-        loss = self.__loss(tokens_logits[tokens_mask], batched_graph["x_ohe_target"][tokens_mask])
+        # [n masked nodes; max token parts]
+        tokens_target = batched_graph["x_target"][tokens_mask]
+        max_token_parts = tokens_target.shape[1]
+
+        # [n masked nodes; hidden dim]
+        encoded_graph = self._encoder(batched_graph)[tokens_mask]
+        # [n masked nodes; vocabulary size]
+        tokens_logits = self.__tokens_classifier(encoded_graph)
+
+        # [n masked nodes; vocabulary size; max token parts]
+        tokens_logits_ext = tokens_logits.unsqueeze(-1).expand(-1, -1, max_token_parts)
+        loss = self.__loss(tokens_logits_ext, tokens_target)
 
         with torch.no_grad():
-            # [n masked tokens; max tokens splits]
-            _, tokens_pred = torch.topk(tokens_logits[tokens_mask], k=batched_graph["x_target"].shape[1], dim=-1)
-            tokens_target = batched_graph["x_target"][tokens_mask]
+            # [n masked nodes; max tokens parts]
+            _, tokens_pred = torch.topk(tokens_logits, max_token_parts, dim=-1)
             tokens_pred[tokens_target == self.__pad_idx] = self.__pad_idx
 
             metric: ClassificationMetrics = self.__metrics[f"{step}_f1"](tokens_pred.T, tokens_target.T)
