@@ -1,7 +1,7 @@
 import pickle
 from argparse import ArgumentParser
-from itertools import chain, repeat, islice
-from typing import Counter, Iterator, Generator
+from itertools import chain, repeat
+from typing import Counter
 
 from tokenizers import Tokenizer
 from tokenizers.models import BPE
