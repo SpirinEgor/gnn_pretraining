@@ -15,10 +15,6 @@ from src.data.preprocess.typilus.typeparsing.visitor import (
     TypeAnnotationVisitor,
 )
 
-LOG_FILENAME = f"typilus_{__name__}.txt"
-logging.basicConfig(filename=LOG_FILENAME, level=logging.DEBUG, filemode="w")
-logger = logging.getLogger(__name__)
-
 __all__ = ["AliasReplacementVisitor"]
 
 
@@ -26,6 +22,7 @@ class AliasReplacementVisitor(TypeAnnotationVisitor):
     """Replace Nodes with Aliases. Assumes recursion has been resolved in replacement_map"""
 
     def __init__(self, replacement_map: Dict[TypeAnnotationNode, TypeAnnotationNode]):
+        self.__logger = logging.getLogger(__name__)
         self.__replacement_map = replacement_map
 
     def __replace_full(self, node: TypeAnnotationNode) -> Tuple[TypeAnnotationNode, bool]:
@@ -35,7 +32,7 @@ class AliasReplacementVisitor(TypeAnnotationVisitor):
             node = self.__replacement_map[node]
             replaced = True
             if node in seen_names:
-                logging.warning(f"WARNING: Circle between {seen_names}. Picking the {node} for now.")
+                self.__logger.warning(f"WARNING: Circle between {seen_names}. Picking the {node} for now.")
                 break
             else:
                 seen_names.add(node)
