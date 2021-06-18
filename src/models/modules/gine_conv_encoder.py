@@ -39,8 +39,11 @@ class GINEConvEncoder(torch.nn.Module):
     def forward(self, batched_graph: Batch) -> torch.Tensor:
         # [n nodes]
         n_parts = (batched_graph.x != self.__pad_idx).sum(dim=-1).reshape(-1, 1)
+        # In some cases, there is no token in a node, e.g., `s = ""` would lead to node for "" with empty token.
+        not_empty_mask = (n_parts != 0).reshape(-1)
         # [n nodes; embed dim]
-        subtokens_embed = self.__st_embedding(batched_graph.x).sum(dim=1) / n_parts
+        subtokens_embed = self.__st_embedding(batched_graph.x).sum(dim=1)
+        subtokens_embed[not_empty_mask] /= n_parts[not_empty_mask]
         # [n nodes; embed dim]
         node_types_embed = self.__node_type_embedding(batched_graph["node_type"])
         # [n nodes; embed dim]
