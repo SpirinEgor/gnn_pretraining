@@ -1,7 +1,7 @@
 import pickle
 from argparse import ArgumentParser
 from itertools import chain, repeat, islice
-from typing import Counter, Iterator
+from typing import Counter, Iterator, Generator
 
 from tokenizers import Tokenizer
 from tokenizers.models import BPE
@@ -14,15 +14,10 @@ from src.utils import UNK, MASK, PAD
 DROPOUT = None
 VOCAB_SIZE = 10_000
 SPECIAL_TOKENS = [PAD, UNK, MASK]
-BATCH_SIZE = 40960
 
 
-def batch_iterator(subtokens_counter: Counter[str]) -> Iterator[Iterator[str]]:
-    chained_subtokens = chain(
-        *(repeat(st.encode("utf-8", "ignore").decode("utf-8"), cnt) for st, cnt in subtokens_counter.items())
-    )
-    chain_iter = iter(chained_subtokens)
-    return iter(lambda: tuple(islice(chain_iter, BATCH_SIZE)), ())
+def batch_iterator(subtokens_counter: Counter[str]) -> chain[str]:
+    return chain(*(repeat(st.encode("utf-8", "ignore").decode("utf-8"), cnt) for st, cnt in subtokens_counter.items()))
 
 
 def train_bpe(vocabulary_path: str, output_path: str):
