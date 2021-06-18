@@ -6,12 +6,12 @@ from omegaconf import OmegaConf
 from pytorch_lightning import Trainer, seed_everything
 from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping, LearningRateMonitor
 from pytorch_lightning.loggers import WandbLogger
+from tokenizers import Tokenizer
 
 from src.data.datamodule import GraphDataModule
-from src.data.vocabulary import Vocabulary
 from src.models.gine_conv_token_prediction import GINEConvTokenPrediction
 from src.models.gine_conv_type_masking import GINEConvTypeMasking
-from src.utils import filter_warnings
+from src.utils import filter_warnings, PAD
 
 
 def configure_arg_parser() -> ArgumentParser:
@@ -26,19 +26,21 @@ def train(config_path: str):
     print(OmegaConf.to_yaml(config))
     seed_everything(config.seed, workers=True)
 
-    # Load vocabulary
-    vocabulary_path = join(config.data_folder, config.vocabulary.name)
-    vocabulary = Vocabulary(vocabulary_path, config.vocabulary.n_tokens)
+    # Load tokenizer
+    tokenizer_path = join(config.data_folder, config.tokenizer)
+    tokenizer = Tokenizer.from_file(tokenizer_path)
+    vocab_size = tokenizer.get_vocab_size()
+    pad_idx = tokenizer.token_to_id(PAD)
 
     # Init datamodule
-    data_module = GraphDataModule(config.data_folder, vocabulary, config.data)
+    data_module = GraphDataModule(config.data_folder, tokenizer, config.data)
 
     # Init model
     task_name = config.data.task.name
     if task_name == "type masking":
-        model = GINEConvTypeMasking(config.model, len(vocabulary), vocabulary.pad[1], config.optimizer)
+        model = GINEConvTypeMasking(config.model, vocab_size, pad_idx, config.optimizer)
     elif task_name == "token prediction":
-        model = GINEConvTokenPrediction(config.model, len(vocabulary), vocabulary.pad[1], config.optimizer)
+        model = GINEConvTokenPrediction(config.model, vocab_size, pad_idx, config.optimizer)
     else:
         print(f"Unknown pretraining task: {task_name}")
         return
@@ -75,7 +77,7 @@ def train(config_path: str):
     )
 
     trainer.fit(model=model, datamodule=data_module)
-    trainer.test()
+    trainer.test(model=model)
 
 
 if __name__ == "__main__":

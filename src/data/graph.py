@@ -3,10 +3,9 @@ from enum import Enum
 from typing import List, Dict
 
 import torch
-from dpu_utils.codeutils import split_identifier_into_parts
+from pyvis.network import Network
+from tokenizers import Tokenizer
 from torch_geometric.data import Data
-
-from src.data.vocabulary import Vocabulary
 
 
 class NodeType(Enum):
@@ -104,17 +103,15 @@ class Graph:
     def edges(self) -> List[Edge]:
         return self.__edges
 
-    def to_torch(self, vocabulary: Vocabulary, max_token_parts: int) -> Data:
+    def to_torch(self, tokenizer: Tokenizer) -> Data:
         """Convert this graph into torch-geometric graph
 
-        :param vocabulary: vocabulary to convert token parts into ids
-        :param max_token_parts: maximum number of token parts into tokenized version
+        :param tokenizer: tokenizer to convert token parts into ids
         :return:
         """
-        token = torch.full((len(self.__nodes), max_token_parts), vocabulary.pad[1], dtype=torch.long)
-        for i, node in enumerate(self.__nodes):
-            subtoken_ids = [vocabulary[st] for st in split_identifier_into_parts(node.token)[:max_token_parts]]
-            token[i, : len(subtoken_ids)] = torch.tensor(subtoken_ids)
+        node_tokens = [n.token for n in self.nodes]
+        encoded = tokenizer.encode_batch(node_tokens)
+        token = torch.tensor([enc.ids for enc in encoded], dtype=torch.long)
 
         node_type = torch.tensor([n.type.value for n in self.__nodes], dtype=torch.long)
         edge_index = torch.tensor(list(zip(*[[e.from_node.id, e.to_node.id] for e in self.__edges])), dtype=torch.long)
@@ -122,3 +119,23 @@ class Graph:
 
         # save token to `x` so Data can calculate properties like `num_nodes`
         return Data(x=token, node_type=node_type, edge_index=edge_index, edge_type=edge_type)
+
+    def draw(self, height: int = 1000, width: int = 1000, notebook: bool = True) -> Network:
+        """Visualize graph using [pyvis](https://pyvis.readthedocs.io/en/latest/) library
+
+        :param graph: graph instance to visualize
+        :param height: height of target visualization
+        :param width: width of target visualization
+        :param notebook: pass True if visualization should be displayed in notebook
+        :return: pyvis Network instance
+        """
+        net = Network(height=height, width=width, directed=True, notebook=notebook)
+        net.barnes_hut(gravity=-10000, overlap=1, spring_length=1)
+
+        for node in self.nodes:
+            net.add_node(node.id, label=node.token, group=node.type.value)
+
+        for edge in self.edges:
+            net.add_edge(edge.from_node.id, edge.to_node.id, label=edge.type.name, group=edge.type.value)
+
+        return net

@@ -8,6 +8,7 @@ pytest==6.2.4
 # Data preprocessing
 dpu-utils
 docopt==0.6.2   # required for typilus
+tokenizers==0.10.3
 
 # Deep learning
 torch-geometric==1.7.0

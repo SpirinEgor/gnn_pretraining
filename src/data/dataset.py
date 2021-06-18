@@ -5,11 +5,12 @@ from typing import Iterator, Optional, Union
 
 import torch
 from omegaconf import DictConfig
+from tokenizers import Tokenizer
 from torch.utils.data import IterableDataset, get_worker_info
 from torch_geometric.data import Data
 
 from src.data.graph import Graph, NodeType, EdgeType
-from src.data.vocabulary import Vocabulary
+from src.utils import PAD, MASK
 
 
 class GraphDataset(IterableDataset):
@@ -20,11 +21,14 @@ class GraphDataset(IterableDataset):
         "full": {"train": 56_666_194, "val": 19_892_270, "test": 18_464_490},
     }
 
-    def __init__(self, graph_filepath: str, vocabulary: Vocabulary, config: DictConfig):
+    def __init__(self, graph_filepath: str, tokenizer: Tokenizer, config: DictConfig):
         super().__init__()
         self.__graph_filepath = graph_filepath
         self.__config = config
-        self.__vocabulary = vocabulary
+        self.__tokenizer = tokenizer
+        self.__pad_idx = tokenizer.token_to_id(PAD)
+        self.__tokenizer.enable_padding(pad_id=self.__pad_idx, pad_token=PAD, length=config.max_token_parts)
+        self.__tokenizer.enable_truncation(max_length=config.max_token_parts)
 
     def __iter__(self) -> Iterator[Data]:
         worker_info = get_worker_info()
@@ -38,7 +42,7 @@ class GraphDataset(IterableDataset):
                 graph = Graph.from_dict(raw_graph)
                 if not self._validate(graph):
                     continue
-                graph = graph.to_torch(self.__vocabulary, self.__config.max_token_parts)
+                graph = graph.to_torch(self.__tokenizer)
                 graph["id"] = i
                 if self.__config.task.name == "type masking":
                     self._type_masking_task(graph)
@@ -67,9 +71,8 @@ class GraphDataset(IterableDataset):
         self._mask_property(graph, "edge_type", self.__config.task.p_edge, len(EdgeType))
 
     def _token_prediction_task(self, graph: Data):
-        x_mask_value = torch.full((self.__config.max_token_parts,), self.__vocabulary.pad[1], dtype=torch.long)
-        x_mask_value[0] = self.__vocabulary.mask[1]
-        self._mask_property(graph, "x", self.__config.task.p, x_mask_value)
+        mask_value = torch.tensor(self.__tokenizer.encode(MASK).ids, dtype=torch.long)
+        self._mask_property(graph, "x", self.__config.task.p, mask_value)
 
     def _validate(self, graph: Graph) -> bool:
         return len(graph.nodes) <= self.__config.max_n_nodes
