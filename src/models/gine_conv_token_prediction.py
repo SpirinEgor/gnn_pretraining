@@ -9,6 +9,7 @@ from torch.nn import Parameter
 from torch_geometric.data import Batch
 from torchmetrics import MetricCollection, Metric
 
+from src.loss import cross_entropy_loss
 from src.models.gine_conv_pretraining import GINEConvPretraining
 from src.models.modules.classifiers import TokensClassifier
 
@@ -18,7 +19,7 @@ class GINEConvTokenPrediction(GINEConvPretraining):
         super().__init__(model_config, vocabulary_size, pad_idx, optim_config)
         self.__tokens_classifier = TokensClassifier(model_config, vocabulary_size)
 
-        self.__loss = nn.CrossEntropyLoss(ignore_index=pad_idx)
+        # self.__loss = nn.CrossEntropyLoss(ignore_index=pad_idx)
         metrics: Dict[str, Metric] = {
             f"{holdout}_f1": SequentialF1Score(False, ignore_idx=[pad_idx]) for holdout in ["train", "val", "test"]
         }
@@ -44,8 +45,8 @@ class GINEConvTokenPrediction(GINEConvPretraining):
         tokens_logits = self.__tokens_classifier(encoded_graph)
 
         # [n masked nodes; vocabulary size; max token parts]
-        tokens_logits_ext = tokens_logits.unsqueeze(-1).expand(-1, -1, max_token_parts)
-        loss = self.__loss(tokens_logits_ext, tokens_target)
+        tokens_probabilities = torch.softmax(tokens_logits, -1)
+        loss = cross_entropy_loss(tokens_probabilities, tokens_target, self.__pad_idx)
 
         with torch.no_grad():
             # [n masked nodes; max tokens parts]

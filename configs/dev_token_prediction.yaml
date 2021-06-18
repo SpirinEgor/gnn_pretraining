@@ -30,7 +30,7 @@ optimizer:
   decay_gamma: 0.75
 
 train:
-  n_epochs: 300
+  n_epochs: 5
   patience: 10
   clip_norm: 10
   val_every_epoch: 1
