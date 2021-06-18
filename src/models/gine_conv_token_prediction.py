@@ -19,7 +19,6 @@ class GINEConvTokenPrediction(GINEConvPretraining):
         super().__init__(model_config, vocabulary_size, pad_idx, optim_config)
         self.__tokens_classifier = TokensClassifier(model_config, vocabulary_size)
 
-        # self.__loss = nn.CrossEntropyLoss(ignore_index=pad_idx)
         metrics: Dict[str, Metric] = {
             f"{holdout}_f1": SequentialF1Score(False, ignore_idx=[pad_idx]) for holdout in ["train", "val", "test"]
         }
