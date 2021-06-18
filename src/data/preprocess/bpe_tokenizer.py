@@ -1,10 +1,11 @@
 import pickle
 from argparse import ArgumentParser
-from typing import List, Generator
+from itertools import chain, repeat, islice
+from typing import Counter, Iterator
 
 from tokenizers import Tokenizer
 from tokenizers.models import BPE
-from tokenizers.normalizers import Sequence, StripAccents, NFKC, Strip, Lowercase
+from tokenizers.normalizers import Sequence, StripAccents, NFKC, Lowercase
 from tokenizers.pre_tokenizers import ByteLevel
 from tokenizers.trainers import BpeTrainer
 
@@ -13,16 +14,19 @@ from src.utils import UNK, MASK, PAD
 DROPOUT = None
 VOCAB_SIZE = 10_000
 SPECIAL_TOKENS = [PAD, UNK, MASK]
-BATCH_SIZE = 1024
+BATCH_SIZE = 40960
 
 
-def batch_iterator(subtokens: List[str]) -> Generator[List[str], None, None]:
-    for i in range(0, len(subtokens), BATCH_SIZE):
-        yield [st.encode("utf-8", "ignore").decode("utf-8") for st in subtokens[i : i + BATCH_SIZE]]
+def batch_iterator(subtokens_counter: Counter[str]) -> Iterator[Iterator[str]]:
+    chained_subtokens = chain(
+        *(repeat(st.encode("utf-8", "ignore").decode("utf-8"), cnt) for st, cnt in subtokens_counter.items())
+    )
+    chain_iter = iter(chained_subtokens)
+    return iter(lambda: tuple(islice(chain_iter, BATCH_SIZE)), ())
 
 
 def train_bpe(vocabulary_path: str, output_path: str):
-    bpe_tokenizer = Tokenizer(BPE(dropout=DROPOUT, unk_token=UNK, fuze_unk=True))
+    bpe_tokenizer = Tokenizer(BPE(dropout=DROPOUT, unk_token=UNK, fuse_unk=True))
     bpe_tokenizer.normalizer = Sequence([NFKC(), Lowercase(), StripAccents()])
     bpe_tokenizer.pre_tokenizer = ByteLevel()
 
@@ -31,8 +35,8 @@ def train_bpe(vocabulary_path: str, output_path: str):
     with open(vocabulary_path, "rb") as vf:
         token_counter = pickle.load(vf)
 
-    subtokens = list(token_counter.keys())
-    bpe_tokenizer.train_from_iterator(batch_iterator(subtokens), trainer=trainer, length=len(subtokens))
+    length = sum([cnt for _, cnt in token_counter.items()])
+    bpe_tokenizer.train_from_iterator(batch_iterator(token_counter), trainer=trainer, length=length)
 
     bpe_tokenizer.save(output_path)
 
