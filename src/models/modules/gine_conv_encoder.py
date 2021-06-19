@@ -55,12 +55,16 @@ class GINEConvEncoder(torch.nn.Module):
         edge_embedding = self.__edge_type_embedding(batched_graph["edge_type"])
 
         # Sparse adjacent matrix
-        num_nodes = batched_graph.num_nodes
-        adj_t = SparseTensor.from_edge_index(batched_graph.edge_index, edge_embedding, (num_nodes, num_nodes)).t()
-        adj_t = adj_t.device_as(edge_embedding)
+        # num_nodes = batched_graph.num_nodes
+        # adj_t = SparseTensor.from_edge_index(batched_graph.edge_index, edge_embedding, (num_nodes, num_nodes)).t()
+        # adj_t = adj_t.device_as(edge_embedding)
 
         # [n nodes; hidden dim]
-        gine_features = self.__gine_conv_start(x=node_embedding, edge_index=adj_t, edge_attr=edge_embedding)
+        gine_features = self.__gine_conv_start(
+            x=node_embedding, edge_index=batched_graph.edge_index, edge_attr=edge_embedding
+        )
         for hidden_gine_conv_layer in self.__hidden_gine_conv:
-            gine_features = hidden_gine_conv_layer(x=gine_features, edge_index=adj_t, edge_attr=edge_embedding)
+            gine_features = hidden_gine_conv_layer(
+                x=gine_features, edge_index=batched_graph.edge_index, edge_attr=edge_embedding
+            )
         return gine_features
