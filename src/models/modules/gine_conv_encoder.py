@@ -60,7 +60,7 @@ class GINEConvEncoder(torch.nn.Module):
         adj_t = adj_t.device_as(edge_embedding)
 
         # [n nodes; hidden dim]
-        gine_features = self.__gine_conv_start(x=node_embedding, edge_index=adj_t)
+        gine_features = self.__gine_conv_start(x=node_embedding, edge_index=adj_t, edge_attr=edge_embedding)
         for hidden_gine_conv_layer in self.__hidden_gine_conv:
-            gine_features = hidden_gine_conv_layer(x=gine_features, edge_index=adj_t)
+            gine_features = hidden_gine_conv_layer(x=gine_features, edge_index=adj_t, edge_attr=edge_embedding)
         return gine_features
