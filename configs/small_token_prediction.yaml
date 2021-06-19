@@ -33,6 +33,5 @@ train:
   n_epochs: 300
   patience: 10
   clip_norm: 10
-  val_every_epoch: 1
-  save_every_epoch: 1
+  val_every_step: 1.0
   log_every_n_steps: 50

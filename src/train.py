@@ -54,8 +54,9 @@ def train(config_path: str):
     # Define callbacks
     checkpoint_callback = ModelCheckpoint(
         dirpath=wandb_logger.experiment.dir,
-        filename="{epoch:02d}-{val_loss:.4f}",
-        period=config.train.save_every_epoch,
+        filename="{epoch:02d}-{step:02d}-{val_loss:.4f}",
+        monitor="val_loss",
+        every_n_val_epochs=1,
         save_top_k=-1,
     )
     early_stopping_callback = EarlyStopping(
@@ -68,7 +69,7 @@ def train(config_path: str):
         max_epochs=config.train.n_epochs,
         gradient_clip_val=config.train.clip_norm,
         deterministic=True,
-        check_val_every_n_epoch=config.train.val_every_epoch,
+        val_check_interval=config.train.val_every_step,
         log_every_n_steps=config.train.log_every_n_steps,
         logger=wandb_logger,
         gpus=gpu,
