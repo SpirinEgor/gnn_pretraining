@@ -12,7 +12,7 @@ from tokenizers import Tokenizer
 from src.data.datamodule import GraphDataModule
 from src.models.gine_conv_token_prediction import GINEConvTokenPrediction
 from src.models.gine_conv_type_masking import GINEConvTypeMasking
-from src.utils import filter_warnings, PAD, PrintEpochResultCallback
+from src.utils import filter_warnings, PAD
 
 
 def configure_arg_parser() -> ArgumentParser:
@@ -73,7 +73,7 @@ def train(config_path: str):
         logger=wandb_logger,
         gpus=gpu,
         progress_bar_refresh_rate=config.progress_bar_refresh_rate,
-        callbacks=[lr_logger, early_stopping_callback, checkpoint_callback, PrintEpochResultCallback("train", "val")],
+        callbacks=[lr_logger, early_stopping_callback, checkpoint_callback],
         resume_from_checkpoint=config.resume_from_checkpoint,
         plugins=DDPPlugin(find_unused_parameters=False),
     )
