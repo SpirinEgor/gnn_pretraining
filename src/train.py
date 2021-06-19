@@ -6,12 +6,13 @@ from omegaconf import OmegaConf
 from pytorch_lightning import Trainer, seed_everything
 from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping, LearningRateMonitor
 from pytorch_lightning.loggers import WandbLogger
+from pytorch_lightning.plugins import DDPPlugin
 from tokenizers import Tokenizer
 
 from src.data.datamodule import GraphDataModule
 from src.models.gine_conv_token_prediction import GINEConvTokenPrediction
 from src.models.gine_conv_type_masking import GINEConvTypeMasking
-from src.utils import filter_warnings, PAD
+from src.utils import filter_warnings, PAD, PrintEpochResultCallback
 
 
 def configure_arg_parser() -> ArgumentParser:
@@ -72,8 +73,9 @@ def train(config_path: str):
         logger=wandb_logger,
         gpus=gpu,
         progress_bar_refresh_rate=config.progress_bar_refresh_rate,
-        callbacks=[lr_logger, early_stopping_callback, checkpoint_callback],
+        callbacks=[lr_logger, early_stopping_callback, checkpoint_callback, PrintEpochResultCallback("train", "val")],
         resume_from_checkpoint=config.resume_from_checkpoint,
+        plugins=DDPPlugin(find_unused_parameters=False),
     )
 
     trainer.fit(model=model, datamodule=data_module)

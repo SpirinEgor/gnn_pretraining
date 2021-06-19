@@ -3,6 +3,7 @@ from omegaconf import DictConfig
 from torch import nn
 from torch_geometric.data import Batch
 from torch_geometric.nn import GINEConv
+from torch_sparse import SparseTensor
 
 from src.data.graph import NodeType, EdgeType
 
@@ -39,11 +40,12 @@ class GINEConvEncoder(torch.nn.Module):
     def forward(self, batched_graph: Batch) -> torch.Tensor:
         # [n nodes]
         n_parts = (batched_graph.x != self.__pad_idx).sum(dim=-1).reshape(-1, 1)
-        # In some cases, there is no token in a node, e.g., `s = ""` would lead to node for "" with empty token.
+        # There are some nodes without token, e.g., `s = ""` would lead to node for "" with empty token.
         not_empty_mask = (n_parts != 0).reshape(-1)
         # [n nodes; embed dim]
         subtokens_embed = self.__st_embedding(batched_graph.x).sum(dim=1)
         subtokens_embed[not_empty_mask] /= n_parts[not_empty_mask]
+
         # [n nodes; embed dim]
         node_types_embed = self.__node_type_embedding(batched_graph["node_type"])
         # [n nodes; embed dim]
@@ -52,12 +54,11 @@ class GINEConvEncoder(torch.nn.Module):
         # [n edges; embed dim]
         edge_embedding = self.__edge_type_embedding(batched_graph["edge_type"])
 
+        # Sparse adjacent matrix
+        adj_t = SparseTensor.from_edge_index(batched_graph.edge_index, edge_embedding).t()
+
         # [n nodes; hidden dim]
-        gine_features = self.__gine_conv_start(
-            x=node_embedding, edge_index=batched_graph.edge_index, edge_attr=edge_embedding
-        )
+        gine_features = self.__gine_conv_start(x=node_embedding, edge_index=adj_t)
         for hidden_gine_conv_layer in self.__hidden_gine_conv:
-            gine_features = hidden_gine_conv_layer(
-                x=gine_features, edge_index=batched_graph.edge_index, edge_attr=edge_embedding
-            )
+            gine_features = hidden_gine_conv_layer(x=gine_features, edge_index=adj_t)
         return gine_features

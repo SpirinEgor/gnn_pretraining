@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from enum import Enum
+from itertools import chain
 from typing import List, Dict
 
 import torch
@@ -58,7 +59,6 @@ class EdgeType(Enum):
 class Edge:
     """Class representing an edge."""
 
-    id: int
     from_node: Node
     to_node: Node
     type: EdgeType
@@ -70,29 +70,35 @@ class Graph:
         self.__edges = edges
 
     @staticmethod
+    def get_node_type(graph_dict: Dict, node_id: int) -> NodeType:
+        node_type = NodeType.NON_TERMINAL
+        if node_id in graph_dict["edges"]["SUBTOKEN_OF"]:
+            node_type = NodeType.VOCABULARY
+        elif node_id in graph_dict["edges"]["OCCURRENCE_OF"]:
+            node_type = NodeType.SYMBOL
+        elif node_id in graph_dict["token-sequence"]:
+            node_type = NodeType.TOKEN
+        return node_type
+
+    @staticmethod
     def from_dict(graph_dict: Dict) -> "Graph":
         assert all(
             [key in graph_dict for key in ["nodes", "edges", "token-sequence", "supernodes"]]
         ), f"Incorrect graph structure: {graph_dict}"
-        nodes = []
-        edges = []
-        for i, token in enumerate(graph_dict["nodes"]):
-            if i in graph_dict["token-sequence"]:
-                node_type = NodeType.TOKEN
-            elif "SUBTOKEN_OF" in graph_dict["edges"] and str(i) in graph_dict["edges"]["SUBTOKEN_OF"]:
-                node_type = NodeType.VOCABULARY
-            elif "OCCURRENCE_OF" in graph_dict["edges"] and str(i) in graph_dict["edges"]["OCCURRENCE_OF"]:
-                node_type = NodeType.SYMBOL
-            else:
-                node_type = NodeType.NON_TERMINAL
-            nodes.append(Node(i, token, node_type))
-        edge_id = 0
+        edges: List[Edge] = []
+        for key in ["SUBTOKEN_OF", "OCCURRENCE_OF"]:
+            graph_dict["edges"][key] = {int(k): v for k, v in graph_dict["edges"].get(key, {}).items()}
+        nodes = [Node(i, token, Graph.get_node_type(graph_dict, i)) for i, token in enumerate(graph_dict["nodes"])]
         for type_name, type_edges in graph_dict["edges"].items():
             edge_type = EdgeType[type_name]
-            for root, children in type_edges.items():
-                for child in children:
-                    edges.append(Edge(edge_id, nodes[int(root)], nodes[int(child)], edge_type))
-                    edge_id += 1
+            edges.extend(
+                chain(
+                    *(
+                        [Edge(nodes[int(root)], nodes[int(child)], edge_type) for child in children]
+                        for root, children in type_edges.items()
+                    )
+                )
+            )
         return Graph(nodes, edges)
 
     @property
@@ -133,7 +139,7 @@ class Graph:
         net.barnes_hut(gravity=-10000, overlap=1, spring_length=1)
 
         for node in self.nodes:
-            net.add_node(node.id, label=node.token, group=node.type.value)
+            net.add_node(node.id, label=node.token, group=node.type.value, title=f"id: {node.id}\ntoken: {node.token}")
 
         for edge in self.edges:
             net.add_edge(edge.from_node.id, edge.to_node.id, label=edge.type.name, group=edge.type.value)
