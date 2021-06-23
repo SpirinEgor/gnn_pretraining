@@ -1,7 +1,8 @@
+import itertools
 import os
 import random
 from argparse import ArgumentParser
-from typing import Optional, Iterable
+from typing import Optional, Iterable, Callable
 
 from dpu_utils.codeutils import split_identifier_into_parts
 
@@ -58,7 +59,7 @@ def configure_arg_parser() -> ArgumentParser:
 
 
 def __vocabulary_for_func(graph: dict) -> Iterable[str]:
-    return (split_identifier_into_parts(t) for t in graph["nodes"])
+    return itertools.chain(split_identifier_into_parts(t) for t in graph["nodes"])
 
 
 def preprocess(
@@ -69,10 +70,7 @@ def preprocess(
     test_part: Optional[float] = None,
     need_vocabulary: bool = False,
 ):
-    if need_vocabulary:
-        vocabulary_for = __vocabulary_for_func
-    else:
-        vocabulary_for = None
+    vocabulary_for: Optional[Callable[[dict], Iterable[str]]] = __vocabulary_for_func if need_vocabulary else None
 
     if os.path.isfile(data_path):
         # Dev case
