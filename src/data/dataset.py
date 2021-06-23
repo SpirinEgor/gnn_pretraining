@@ -19,7 +19,8 @@ class GraphDataset(IterableDataset):
         "dev": {"train": 552, "val": 185, "test": 192},
         "small": {"train": 44_683, "val": 14_892, "test": 14_934},
         "full": {"train": 56_666_194, "val": 19_892_270, "test": 18_464_490},
-        "xglue-code-to-text-python": {"train": 1_975_615, "val": 110_421, "test": 117_525},
+        "xglue-code-to-text-python": {"train": 249_686, "val": 13_774, "test": 14_761},
+        "xglue-code-to-text-python-dev": {"train": 1_000, "val": 1_000, "test": 1_000},
     }
 
     def __init__(self, graph_filepath: str, tokenizer: Tokenizer, config: DictConfig):

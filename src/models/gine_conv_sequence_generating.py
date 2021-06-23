@@ -33,6 +33,7 @@ class GINEConvSequenceGenerating(GINEConvPretraining):
             state_dict = torch.load(pretrain)
             if isinstance(state_dict, dict) and "state_dict" in state_dict:
                 state_dict = state_dict["state_dict"]
+            state_dict = {k.removeprefix("_encoder."): v for k, v in state_dict.items() if k.startswith("_encoder.")}
             self._encoder.load_state_dict(state_dict)
 
         self.__pad_idx = label_tokenizer.token_to_id(PAD)

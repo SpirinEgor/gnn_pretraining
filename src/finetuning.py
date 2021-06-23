@@ -44,6 +44,7 @@ def fine_tune(config_path: str):
         config.optimizer,
         label_tokenizer,
         config.train.teacher_forcing,
+        config.pretrained_weights,
     )
 
     train(model, data_module, config)

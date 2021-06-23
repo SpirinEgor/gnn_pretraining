@@ -1,4 +1,4 @@
-data_folder: ../data/gnn_pretraining/xglue-code-to-text-python
+data_folder: ../data/gnn_pretraining/xglue-code-to-text-python-dev
 
 resume_from_checkpoint: null
 
@@ -7,15 +7,15 @@ offline: true
 # Training in notebooks (e.g. Google Colab) may crash with too small value
 progress_bar_refresh_rate: 1
 
-node_tokenizer: null
+node_tokenizer: "../pretrain/tokenizer.json"
 label_tokenizer: "label_tokenizer.json"
 
-pretrained_weights: null
+pretrained_weights: "../data/gnn_pretraining/pretrain/pretrained_weights.ckpt"
 
 data:
-  num_workers: -1
-  batch_size: 256
-  test_batch_size: 384
+  num_workers: 0
+  batch_size: 10
+  test_batch_size: 5
   max_token_parts: 5
   max_n_nodes: 4000
   task:
@@ -23,9 +23,9 @@ data:
     field: "docstring"
 
 model:
-  embed_dim: 128
-  hidden_dim: 128
-  n_hidden_layers: 3
+  embed_dim: 10
+  hidden_dim: 10
+  n_hidden_layers: 1
   decoder:
     decoder_num_layers: 1
     embedding_size: 10
@@ -39,7 +39,7 @@ optimizer:
   decay_gamma: 0.75
 
 train:
-  n_epochs: 300
+  n_epochs: 5
   patience: 10
   clip_norm: 10
   teacher_forcing: 0.5
