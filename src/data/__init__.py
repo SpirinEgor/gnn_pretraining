@@ -1,5 +1,5 @@
-from .preprocess.preprocess import extract_graph
-from .preprocess.git_data_preparation import Example
+from .preprocess.graph_extraction import extract_graph
+from .preprocess.graph_extraction import Example
 from .graph import Graph
 from .vocabulary import Vocabulary
 from .dataset import GraphDataset
