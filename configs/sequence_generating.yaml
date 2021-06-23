@@ -1,13 +1,13 @@
-data_folder: ../data/gnn_pretraining/xglue-code-to-text-python
+data_folder: ../data/graphs/xglue-code-to-text-python
 
 resume_from_checkpoint: null
 
 seed: 7
-offline: true
+offline: false
 # Training in notebooks (e.g. Google Colab) may crash with too small value
 progress_bar_refresh_rate: 1
 
-node_tokenizer: null
+node_tokenizer: "../data/graphs/full/tokenizer.json"
 label_tokenizer: "label_tokenizer.json"
 
 pretrained_weights: null
@@ -28,8 +28,8 @@ model:
   n_hidden_layers: 3
   decoder:
     decoder_num_layers: 1
-    embedding_size: 10
-    decoder_size: 10
+    embedding_size: 128
+    decoder_size: 128
     rnn_dropout: 0.3
 
 

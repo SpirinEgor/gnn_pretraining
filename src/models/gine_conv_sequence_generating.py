@@ -30,11 +30,14 @@ class GINEConvSequenceGenerating(GINEConvPretraining):
     ):
         super().__init__(model_config, node_vocab_size, node_pad_idx, optim_config)
         if pretrain is not None:
+            print("Use pretrained weights for sequence generating model")
             state_dict = torch.load(pretrain)
             if isinstance(state_dict, dict) and "state_dict" in state_dict:
                 state_dict = state_dict["state_dict"]
             state_dict = {k.removeprefix("_encoder."): v for k, v in state_dict.items() if k.startswith("_encoder.")}
             self._encoder.load_state_dict(state_dict)
+        else:
+            print("No pre-trained weights for sequence generating model")
 
         self.__pad_idx = label_tokenizer.token_to_id(PAD)
         self.__label_tokenizer = label_tokenizer
