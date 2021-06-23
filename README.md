@@ -33,7 +33,7 @@ To represents code as graphs we use the approach presented in [Typilus](https://
 The implementation is taken from the [fork](https://github.com/JetBrains-Research/typilus)
 of original implementation with essential bug fixes.
 
-Use [preprocess.py](src/data/preprocess/preprocess.py) to convert your data into graphs:
+Use [preprocess.py](src/data/preprocess/preprocess_pretrain.py) to convert your data into graphs:
 ```shell
 PYTHONPATH="." python src/data/preprocess/preprocess.py
     -d <path to file with data>
