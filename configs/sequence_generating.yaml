@@ -7,7 +7,7 @@ offline: false
 # Training in notebooks (e.g. Google Colab) may crash with too small value
 progress_bar_refresh_rate: 1
 
-node_tokenizer: "../data/graphs/full/tokenizer.json"
+node_tokenizer: "../full/tokenizer.json"
 label_tokenizer: "label_tokenizer.json"
 
 pretrained_weights: null
