@@ -2,15 +2,17 @@ from typing import Optional, List, Iterator, Dict
 
 import torch
 from commode_utils.loss import sequence_cross_entropy_loss
-from commode_utils.metrics import SequentialF1Score, ClassificationMetrics
 from commode_utils.modules import LSTMDecoderStep, Decoder
 from omegaconf import DictConfig
 from pytorch_lightning.utilities.types import EPOCH_OUTPUT
 from tokenizers import Tokenizer
+from tokenizers.decoders import ByteLevel
+from tokenizers.processors import TemplateProcessing
 from torch.nn import Parameter
 from torch_geometric.data import Batch
 from torchmetrics import MetricCollection
 
+from src.metric import CodeXGlueBleu
 from src.models.gine_conv_pretraining import GINEConvPretraining
 from src.utils import PAD, BOS, EOS
 
@@ -34,15 +36,26 @@ class GINEConvSequenceGenerating(GINEConvPretraining):
             self._encoder.load_state_dict(state_dict)
 
         self.__pad_idx = label_tokenizer.token_to_id(PAD)
-        decoder_step = LSTMDecoderStep(model_config.decoder, label_tokenizer.get_vocab_size(), self.__pad_idx)
-        self._decoder = Decoder(decoder_step, label_tokenizer.get_vocab_size(), self.token_to_id(BOS), teacher_forcing)
+        self.__label_tokenizer = label_tokenizer
+        self.__label_tokenizer.add_special_tokens([BOS, EOS])
+        self.__label_tokenizer.post_processor = TemplateProcessing(
+            single=f"{BOS} $A {EOS}",
+            pair=None,
+            special_tokens=[
+                (BOS, self.__label_tokenizer.token_to_id(BOS)),
+                (EOS, self.__label_tokenizer.token_to_id(EOS)),
+            ],
+        )
+        self.__label_tokenizer.enable_padding(pad_id=self.__pad_idx, pad_token=PAD)
+        self.__label_tokenizer.decoder = ByteLevel()
 
-        ignore_idx = [label_tokenizer.token_to_id(it) for it in [PAD, BOS, EOS]]
+        decoder_step = LSTMDecoderStep(model_config.decoder, label_tokenizer.get_vocab_size(), self.__pad_idx)
+        self._decoder = Decoder(
+            decoder_step, label_tokenizer.get_vocab_size(), label_tokenizer.token_to_id(BOS), teacher_forcing
+        )
+
         self.__metric_dict = MetricCollection(
-            {
-                holdout: SequentialF1Score(mask_after_pad=True, pad_idx=self.__pad_idx, ignore_idx=ignore_idx)
-                for holdout in ["train", "val", "test"]
-            }
+            {f"{holdout}_bleu": CodeXGlueBleu(4, 1) for holdout in ["train", "val", "test"]}
         )
 
     # ========== EXTENSION INTERFACE ==========
@@ -53,37 +66,40 @@ class GINEConvSequenceGenerating(GINEConvPretraining):
     def _shared_step(self, batched_graph: Batch, step: str) -> Dict:
         # [n nodes; hidden dim]
         encoded_graph = self._encoder(batched_graph)
-        graph_sizes = [it.num_nodes for it in batched_graph.to_data_list()]
+        graph_sizes = torch.tensor(
+            [it.num_nodes for it in batched_graph.to_data_list()], dtype=torch.int, device=self.device
+        )
 
-        # [max seq len; batch size]
+        # [batch size]
         target = batched_graph["target"]
+        target_tokenized = self.__label_tokenizer.encode_batch(target)
+        # [max seq len; batch size]
+        target_ids = torch.empty(
+            (len(target_tokenized[0]), len(target_tokenized)), dtype=torch.long, device=self.device
+        )
+        for i, tt in enumerate(target_tokenized):
+            target_ids[:, i] = torch.tensor(tt.ids)
 
         # [max seq len; batch size; vocab size]
-        logits = self._decoder(encoded_graph, graph_sizes, target.shape[0], target)
+        logits = self._decoder(encoded_graph, graph_sizes, target_ids.shape[0], target_ids)
 
-        loss = sequence_cross_entropy_loss(logits, target, self.__pad_idx)
+        loss = sequence_cross_entropy_loss(logits, target_ids, self.__pad_idx)
 
         with torch.no_grad():
-            # [max seq len; batch size]
-            prediction = logits.argmax(-1)
+            # [batch size, max seq len]
+            prediction = logits.detach().argmax(-1).T.tolist()
+            # [batch size]
+            predicted_sequence = self.__label_tokenizer.decode_batch(prediction)
 
-            metric: ClassificationMetrics = self.__metrics[f"{step}_f1"](prediction, target)
+            bleu = self.__metric_dict[f"{step}_bleu"](predicted_sequence, target)
 
-        return {
-            f"{step}/loss": loss,
-            f"{step}/f1": metric.f1_score,
-            f"{step}/precision": metric.precision,
-            f"{step}/recall": metric.recall,
-        }
+        return {f"{step}/loss": loss, f"{step}/bleu": bleu}
 
     def _log_training_step(self, results: Dict):
         super()._log_training_step(results)
-        self.log("f1", results["train/f1"], prog_bar=True, logger=False)
+        self.log("bleu", results["train/bleu"], prog_bar=True, logger=False)
 
     def _prepare_epoch_end_log(self, step_outputs: EPOCH_OUTPUT, step: str) -> Dict[str, torch.Tensor]:
         log = super()._prepare_epoch_end_log(step_outputs, step)
-        metric: ClassificationMetrics = self.__metrics[f"{step}_f1"].compute()
-        log.update(
-            {f"{step}_f1": metric.f1_score, f"{step}_precision": metric.precision, f"{step}_recall": metric.recall}
-        )
+        log[f"{step}_bleu"] = self.__metric_dict[f"{step}_bleu"].compute()
         return log

@@ -49,7 +49,7 @@ The output of preprocessing is a 3 gzipped JSONL file. Each file correspond to s
 We use [PyTorch Lightning](https://www.pytorchlightning.ai) to implement all necessary modules for training. Thus they can be easily reused in other research works. Currently, we supported next pretraining schemes:
 - Predicting `Node` and `Edge` types using `GINEConv` operator from the [Strategies for Pre-training Graph Neural Networks](https://arxiv.org/abs/1905.12265) paper. For each graph we randomly masked `Node` and `Edge` types with special token and trained model to restore them back. To start experiment run:
 ```shell
-PYTHONPATH="." python src/train.py -c <path to YAML config file> 
+PYTHONPATH="." python src/pretraining.py -c <path to YAML config file> 
 ```
 [src.models.modules.gine_conv_encoder](./src/models/modules/gine_conv_encoder.py) contains descibed encoder model and [src.models.gine_conv_masking_pretraining](src/models/gine_conv_type_masking.py) contains complete Lightning module with pretraining description.
 

@@ -58,8 +58,9 @@ def configure_arg_parser() -> ArgumentParser:
     return arg_parser
 
 
+# TODO: fix typing
 def __vocabulary_for_func(graph: dict) -> Iterable[str]:
-    return itertools.chain(split_identifier_into_parts(t) for t in graph["nodes"])
+    return itertools.chain(split_identifier_into_parts(t) for t in graph["nodes"])  # type: ignore
 
 
 def preprocess(

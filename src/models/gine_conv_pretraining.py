@@ -31,7 +31,7 @@ class GINEConvPretraining(LightningModule):
         scheduler = torch.optim.lr_scheduler.LambdaLR(
             optimizer, lr_lambda=lambda epoch: self.__optim_config.decay_gamma ** epoch
         )
-        return {"optimizer": optimizer, "scheduler": scheduler}
+        return {"optimizer": optimizer, "lr_scheduler": scheduler}
 
     # ========== EXTENSION INTERFACE ==========
 

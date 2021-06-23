@@ -1,4 +1,4 @@
-data_folder: ../data/gnn_pretraining/dev
+data_folder: ../data/gnn_pretraining/xglue-code-to-text-python
 
 resume_from_checkpoint: null
 
@@ -7,7 +7,10 @@ offline: true
 # Training in notebooks (e.g. Google Colab) may crash with too small value
 progress_bar_refresh_rate: 1
 
-tokenizer: "tokenizer.json"
+node_tokenizer: "node_tokenizer.json"
+label_tokenizer: "label_tokenizer.json"
+
+pretrain: null
 
 data:
   num_workers: 0
@@ -16,8 +19,8 @@ data:
   max_token_parts: 5
   max_n_nodes: 4000
   task:
-    name: "token prediction"
-    p: 0.5
+    name: "sequence generating"
+    field: "docstring"
 
 model:
   embed_dim: 10

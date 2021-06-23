@@ -1,7 +1,7 @@
 import gzip
 import json
 from os.path import dirname, basename
-from typing import Iterator, Optional, Union
+from typing import Iterator, Optional, Union, Dict
 
 import torch
 from omegaconf import DictConfig
@@ -19,6 +19,7 @@ class GraphDataset(IterableDataset):
         "dev": {"train": 552, "val": 185, "test": 192},
         "small": {"train": 44_683, "val": 14_892, "test": 14_934},
         "full": {"train": 56_666_194, "val": 19_892_270, "test": 18_464_490},
+        "xglue-code-to-text-python": {"train": 1_975_615, "val": 110_421, "test": 117_525},
     }
 
     def __init__(self, graph_filepath: str, tokenizer: Tokenizer, config: DictConfig):
@@ -44,13 +45,18 @@ class GraphDataset(IterableDataset):
                     continue
                 graph = graph.to_torch(self.__tokenizer)
                 graph["id"] = i
-                if self.__config.task.name == "type masking":
-                    self._type_masking_task(graph)
-                elif self.__config.task.name == "token prediction":
-                    self._token_prediction_task(graph)
-                else:
-                    raise ValueError(f"Unknown task for graph learning: {self.__config.task.name}")
+                self._extract_label(graph, raw_graph)
                 yield graph
+
+    def _extract_label(self, graph: Data, raw_graph: Dict):
+        if self.__config.task.name == "type masking":
+            self._type_masking_task(graph)
+        elif self.__config.task.name == "token prediction":
+            self._token_prediction_task(graph)
+        elif self.__config.task.name == "sequence generating":
+            self._sequence_generating_task(graph, raw_graph)
+        else:
+            raise ValueError(f"Unknown task for graph learning: {self.__config.task.name}")
 
     def __len__(self) -> Optional[int]:
         dataset_name = basename(dirname(self.__graph_filepath))
@@ -74,5 +80,10 @@ class GraphDataset(IterableDataset):
         mask_value = torch.tensor(self.__tokenizer.encode(MASK).ids, dtype=torch.long)
         self._mask_property(graph, "x", self.__config.task.p, mask_value)
 
+    def _sequence_generating_task(self, graph: Data, raw_graph: Dict):
+        graph["target"] = raw_graph[self.__config.task.field]
+
     def _validate(self, graph: Graph) -> bool:
+        if self.__config.max_n_nodes is None:
+            return True
         return len(graph.nodes) <= self.__config.max_n_nodes

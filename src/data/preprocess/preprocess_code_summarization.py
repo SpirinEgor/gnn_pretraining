@@ -77,6 +77,7 @@ def preprocess(save_path_dir: str, lang: str = "python") -> None:
             except SyntaxError as e:
                 logger.warning(f"Failed to remove doc: {e}")
 
+        holdout = "val" if holdout == "validation" else holdout
         process_data(examples, holdout, save_path_dir, __vocabulary_func if holdout == "train" else None)
 
 

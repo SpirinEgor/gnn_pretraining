@@ -1,9 +1,8 @@
 import re
+import xml.sax.saxutils
 from math import log, exp
 from sys import float_info
-from typing import List, Dict, Tuple, Union, Any
-
-import xml.sax.saxutils
+from typing import List, Dict, Tuple, Any
 
 import torch
 from torchmetrics import Metric
@@ -150,9 +149,9 @@ class CodeXGlueBleu(Metric):
         test = self.__cook_hypothesis(hypothesis, cooked_refs)
         return self.__score_cooked([test])
 
-    def update(self, hypotheses: List[str], references: List[List[str]]):  # type: ignore
+    def update(self, hypotheses: List[str], references: List[str]):  # type: ignore
         for hypothesis, reference in zip(hypotheses, references):
-            bleu = self.__bleu(reference, hypothesis)
+            bleu = self.__bleu([reference], hypothesis)
             self.score += bleu[0]  # type: ignore
             self.num += 1  # type: ignore
 
