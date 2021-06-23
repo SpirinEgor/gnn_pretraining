@@ -3,6 +3,8 @@ from warnings import filterwarnings
 PAD = "<PAD>"
 UNK = "<UNK>"
 MASK = "<MASK>"
+BOS = "<BOS>"
+EOS = "<EOS>"
 
 
 def filter_warnings():
