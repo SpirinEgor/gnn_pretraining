@@ -10,7 +10,7 @@ progress_bar_refresh_rate: 1
 node_tokenizer: "../full/tokenizer.json"
 label_tokenizer: "label_tokenizer.json"
 
-pretrained_weights: null
+pretrained_weights: "../data/graphs/full/pretrained_weights.ckpt"
 
 data:
   num_workers: -1
