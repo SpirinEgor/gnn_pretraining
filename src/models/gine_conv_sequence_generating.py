@@ -85,7 +85,10 @@ class GINEConvSequenceGenerating(GINEConvPretraining):
             target_ids[:, i] = torch.tensor(tt.ids)
 
         # [max seq len; batch size; vocab size]
-        logits = self._decoder(encoded_graph, graph_sizes, target_ids.shape[0], target_ids)
+        if step == "train":
+            logits = self._decoder(encoded_graph, graph_sizes, target_ids.shape[0], target_ids)
+        else:
+            logits = self._decoder(encoded_graph, graph_sizes, target_ids.shape[0])
 
         loss = sequence_cross_entropy_loss(logits, target_ids, self.__pad_idx)
 
