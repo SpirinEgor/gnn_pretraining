@@ -20,7 +20,7 @@ torchmetrics==0.3.2
 commode-utils==0.3.1
 
 # Utils
-tqdm==4.61.1
+tqdm==4.49.0
 omegaconf==2.1.0
 pyvis==0.1.9
 wandb==0.10.32
