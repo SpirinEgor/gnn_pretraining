@@ -1,7 +1,7 @@
 from typing import Optional, List, Iterator, Dict
 
 import torch
-from commode_utils.loss import sequence_cross_entropy_loss
+from commode_utils.losses import SequenceCrossEntropyLoss
 from commode_utils.modules import LSTMDecoderStep, Decoder
 from omegaconf import DictConfig
 from pytorch_lightning.utilities.types import EPOCH_OUTPUT
@@ -62,6 +62,8 @@ class GINEConvSequenceGenerating(GINEConvPretraining):
             {f"{holdout}_bleu": CodeXGlueBleu(4, 1) for holdout in ["train", "val", "test"]}
         )
 
+        self.__loss = SequenceCrossEntropyLoss(self.__pad_idx)
+
     # ========== EXTENSION INTERFACE ==========
 
     def _get_parameters(self) -> List[Iterator[Parameter]]:
@@ -90,7 +92,7 @@ class GINEConvSequenceGenerating(GINEConvPretraining):
         else:
             logits = self._decoder(encoded_graph, graph_sizes, target_ids.shape[0])
 
-        loss = sequence_cross_entropy_loss(logits, target_ids, self.__pad_idx)
+        loss = self.__loss(logits, target_ids)
 
         with torch.no_grad():
             # [batch size, max seq len]

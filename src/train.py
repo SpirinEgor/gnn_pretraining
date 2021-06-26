@@ -1,6 +1,7 @@
 from os.path import basename
 
 import torch
+from commode_utils.callback import PrintEpochResultCallback, UploadCheckpointCallback
 from omegaconf import DictConfig
 from pytorch_lightning import LightningModule, LightningDataModule, Trainer
 from pytorch_lightning.callbacks import ModelCheckpoint, EarlyStopping, LearningRateMonitor
@@ -25,6 +26,8 @@ def train(model: LightningModule, data_module: LightningDataModule, config: Dict
         patience=config.train.patience, monitor="val_loss", verbose=True, mode="min"
     )
     lr_logger = LearningRateMonitor("step")
+    print_epoch_results = PrintEpochResultCallback(split_symbol="_", after_test=False)
+    upload_weights = UploadCheckpointCallback(wandb_logger.experiment.dir)
 
     gpu = 1 if torch.cuda.is_available() else None
     trainer = Trainer(
@@ -36,7 +39,7 @@ def train(model: LightningModule, data_module: LightningDataModule, config: Dict
         logger=wandb_logger,
         gpus=gpu,
         progress_bar_refresh_rate=config.progress_bar_refresh_rate,
-        callbacks=[lr_logger, early_stopping_callback, checkpoint_callback],
+        callbacks=[lr_logger, early_stopping_callback, checkpoint_callback, print_epoch_results, upload_weights],
         resume_from_checkpoint=config.resume_from_checkpoint,
     )
 

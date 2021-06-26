@@ -27,10 +27,10 @@ model:
   hidden_dim: 128
   n_hidden_layers: 3
   decoder:
-    decoder_num_layers: 1
+    decoder_num_layers: 3
     embedding_size: 128
     decoder_size: 128
-    rnn_dropout: 0.3
+    rnn_dropout: 0.5
 
 
 optimizer:

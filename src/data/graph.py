@@ -11,11 +11,11 @@ from torch_geometric.data import Data
 
 class NodeType(Enum):
     """Enum class to represent node type.
-    - token nodes represent the raw lexemes in the program.
-    - non-terminal nodes of the syntax tree.
-    - vocabulary nodes that represents a subtoken,
-        i.e. a word-like element which is retrieved by splitting an identifier into parts on camelCase or pascal_case.
-    - symbol nodes that represent a unique symbol in the symbol table, such as a variable or function parameter.
+    — token nodes represent the raw lexemes in the program.
+    — non-terminal nodes of the syntax tree.
+    — vocabulary nodes that represents a subtoken,
+        i.e., a word-like element that retrieved by splitting an identifier into parts on camelCase or pascal_case.
+    — symbol nodes that represent a unique symbol in the symbol table, such as a variable or function parameter.
     """
 
     TOKEN = 0
@@ -35,14 +35,14 @@ class Node:
 
 class EdgeType(Enum):
     """Enum class to represent edge type.
-    - NEXT: two consecutive token nodes.
-    - CHILD: syntax nodes to their children nodes and tokens.
-    - NEXT_USE: each token that is bound to a variable to all potential next uses of the variable.
-    - LAST_LEXICAL_USE: each token that is bound to a variable to its last lexical use.
-    - COMPUTED_FROM: the left hand side of an assignment expression to its right hand-side.
-    - RETURNS_TO: all return/yield statements to the function declaration node where control returns.
-    - OCCURRENCE_OF: all token and syntax nodes that bind to a symbol to the respective symbol node.
-    - SUBTOKEN_OF: each identifier token node to the vocabulary nodes of its subtokens.
+    — NEXT: two consecutive token nodes.
+    — CHILD: syntax nodes to their children nodes and tokens.
+    — NEXT_USE: each token that bound to a variable to all potential next uses of the variable.
+    — LAST_LEXICAL_USE: each token that bound to a variable to its last lexical use.
+    — COMPUTED_FROM: the left-hand side of an assignment expression to its right hand-side.
+    — RETURNS_TO: all return/yield statements to the function declaration node where control returns.
+    — OCCURRENCE_OF: all token and syntax nodes that bind to a symbol to the respective symbol node.
+    — SUBTOKEN_OF: each identifier token node to the vocabulary nodes of its subtokens.
     """
 
     NEXT = 0
