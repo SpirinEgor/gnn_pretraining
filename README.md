@@ -46,12 +46,26 @@ The output of preprocessing is a 3 gzipped JSONL file. Each file correspond to s
 
 ## Model pre-training
 
-We use [PyTorch Lightning](https://www.pytorchlightning.ai) to implement all necessary modules for training. Thus they can be easily reused in other research works. Currently, we supported next pretraining schemes:
-- Predicting `Node` and `Edge` types using `GINEConv` operator from the [Strategies for Pre-training Graph Neural Networks](https://arxiv.org/abs/1905.12265) paper. For each graph we randomly masked `Node` and `Edge` types with special token and trained model to restore them back. To start experiment run:
+We use [PyTorch Lightning](https://www.pytorchlightning.ai) to implement all necessary modules for training. Thus they can be easily reused in other research works.
+All pre-training are using `GINEConv` operator from the [Strategies for Pre-training Graph Neural Networks](https://arxiv.org/abs/1905.12265) paper. [src.models.modules.gine_conv_encoder](./src/models/modules/gine_conv_encoder.py) contains descibed encoder model.
+
+Currently, we supported next pretraining schemes:
+- Predicting `Node` and `Edge` types. For each graph we randomly masked `Node` and `Edge` types with special token and trained model to restore them back. [src.models.gine_conv_masking_pretraining](src/models/gine_conv_type_masking.py) contains complete Lightning module for this pre-training.
+- Predicting sequence of subtokens in `Node`. For each graph we randomly masked tokens with special token and trained model to restore them back. [src.models.gine_conv_token_prediction](src/models/gine_conv_token_prediction.py) contains complete Lightning module for this pre-training.
+
+To run pretraining with chosen model use the following command:
 ```shell
 PYTHONPATH="." python src/pretraining.py -c <path to YAML config file> 
 ```
-[src.models.modules.gine_conv_encoder](./src/models/modules/gine_conv_encoder.py) contains descibed encoder model and [src.models.gine_conv_masking_pretraining](src/models/gine_conv_type_masking.py) contains complete Lightning module with pretraining description.
+
+## Model fine-tuning
+
+Currently we support fine-tuning for code-to-text task, e.g., generating documentation for code. We use BPE to tokenize documentation for train holdout. The decoder of the model is LSTM with attention to node states. [src.models.gine_conv_sequence_generating](src/models/gine_conv_sequence_generating.py) contains complete Lightning module for this fine-tuning.
+
+To run fine-tuning use the following command:
+```shell
+PYTHONPATH="." python src/finetuning.py -c <path to YAML config file> 
+```
 
 ### Configuration
 
