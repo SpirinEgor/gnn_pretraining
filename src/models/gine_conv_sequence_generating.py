@@ -63,6 +63,7 @@ class GINEConvSequenceGenerating(GINEConvPretraining):
         )
 
         self.__loss = SequenceCrossEntropyLoss(self.__pad_idx)
+        self.__temperature = model_config.temperature
 
     # ========== EXTENSION INTERFACE ==========
 
@@ -91,6 +92,7 @@ class GINEConvSequenceGenerating(GINEConvPretraining):
             logits = self._decoder(encoded_graph, graph_sizes, target_ids.shape[0], target_ids)
         else:
             logits = self._decoder(encoded_graph, graph_sizes, target_ids.shape[0])
+        logits /= self.__temperature
 
         loss = self.__loss(logits, target_ids)
 
@@ -99,6 +101,8 @@ class GINEConvSequenceGenerating(GINEConvPretraining):
             prediction = logits.detach().argmax(-1).T.tolist()
             # [batch size]
             predicted_sequence = self.__label_tokenizer.decode_batch(prediction)
+            if step != "train":
+                print(predicted_sequence[0])
 
             bleu = self.__metric_dict[f"{step}_bleu"](predicted_sequence, target)
 

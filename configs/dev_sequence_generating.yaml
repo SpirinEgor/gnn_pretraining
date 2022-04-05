@@ -15,7 +15,7 @@ pretrained_weights: "../data/gnn_pretraining/pretrain/pretrained_weights.ckpt"
 data:
   num_workers: 0
   batch_size: 10
-  test_batch_size: 5
+  test_batch_size: 512
   max_token_parts: 5
   max_n_nodes: 4000
   task:
@@ -26,6 +26,7 @@ model:
   embed_dim: 10
   hidden_dim: 10
   n_hidden_layers: 1
+  temperature: 2
   decoder:
     decoder_num_layers: 1
     embedding_size: 10

@@ -4,6 +4,7 @@
 __pycache__/
 notebooks/
 wandb/
+.DS_Store
 
 *.pyc
 *.txt
